@@ -1,6 +1,6 @@
 /*
  * xtc - The eXTensible Compiler
- * Copyright (C) 2005-2009 Robert Grimm
+ * Copyright (C) 2005-2012 Robert Grimm
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -35,7 +35,7 @@ import java.math.BigInteger;
  * <code>__WCHAR_TYPE__</code> preprocessor macros are defined.
  *
  * @author Robert Grimm
- * @version $Revision: 1.40 $
+ * @version $Revision: 1.44 $
  */
 public class Limits {
 
@@ -45,7 +45,7 @@ public class Limits {
   // --------------------------------------------------------------------------
 
   /** The name and version of the operating system. */
-  public static final String OS = "Mac OS X 10.6.8";
+  public static final String OS = "Mac OS X 10.7.3";
 
   /** The processor architecture. */
   public static final String ARCH = "x86_64";
@@ -58,7 +58,7 @@ public class Limits {
 
   /** The C compiler version. */
   public static final String COMPILER_VERSION =
-    "4.2.1 (Apple Inc. build 5664)";
+    "4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2336.9.00)";
 
   /** The major C compiler version. */
   public static final int COMPILER_VERSION_MAJOR = 4;

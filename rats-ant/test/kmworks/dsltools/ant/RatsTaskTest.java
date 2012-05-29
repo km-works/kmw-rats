@@ -3,6 +3,7 @@ package kmworks.dsltools.ant;
 import java.io.File;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -22,14 +23,16 @@ public class RatsTaskTest {
   public static void tearDownClass() throws Exception {
   }
 
-  /*
-   * Generate parser for EBNF.rats with same parameters as given in the kmworks-dsltools build file
-   */
-  @Test
+  // The following test case just documents how to execute a RatsTask from Java
+  // You must fill-in real file paths, before using it
+  @Test @Ignore
   public void testExecute() {
     RatsTask rats = new RatsTask();
-    rats.setFile(new File("P:\\KMW_RATSLAB\\svn\\product\\kmworks-dsltools\\src\\kmworks\\dsltools\\ebnf\\EBNF.rats"));
-    rats.setRoot(new File("P:\\KMW_RATSLAB\\svn\\product\\kmworks-dsltools\\src\\kmworks\\dsltools"));
+    // absolute path of Rats main module
+    rats.setFile(new File("/abs/path/to/rats-root-dir/rats/main-mod/main.rats"));
+    // absolute path of top-level dir for all Rats modules
+    rats.setRoot(new File("/abs/path/to/rats-root-dir"));
+    // any number of options
     rats.setOptions("verbose");
     rats.execute();
   }

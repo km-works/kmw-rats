@@ -41,7 +41,7 @@ public class RatsTest {
   public static void tearDownClass() throws Exception {
   }
 
-  // The following test case just documents how to call to Rats tool
+  // The following test case just documents how to execute the Rats tool
   // You must fill-in real file paths, before using it
   @Test @Ignore
   public void testMain() {
