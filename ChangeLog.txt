@@ -1,0 +1,19 @@
+Change Log
+==========
+
+vs. Contributed code base: xtc_v2.3.1-core (2012-04-04)
+    which (with respect to the Rats tool) has not changed since xtc_v2.2.0-core (2011-11-19)
+
+CR002 Require a (not generated) abstract class AbstractParser within same package as the
+      generated parser class, which has been changed to extend AbstractParser instead of
+      ParserBase.
+      This is useful for inserting a customizable class under the developers control 
+      between the generated parser class and class ParserBase provided by Rats, effectively
+      decoupling the generated parser from ParserBase.
+      Changes in: xtc.parser.CodeGenerator
+      
+CR003 Make top-level parsing methods "public final" instead of just "public"
+      Changes in: xtc.parser.CodeGenerator
+      
+CR004 Remove timestamp from from header comment of generated parser because it forces a 
+      useless new svn version on every generation run absent substancial changes.
