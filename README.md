@@ -2,11 +2,11 @@
 
 ## About
 
-This is a modified version of [Rats!](http://cs.nyu.edu/rgrimm/xtc/rats-intro.html) - a Java Packrat Parser generator 
-- published by [Robert Grim](http://cs.nyu.edu/rgrimm/) as part of his [xtc](http://cs.nyu.edu/rgrimm/xtc/) 
-(eXTensible Compiler) project.
+This is a modified version of [Rats!](http://cs.nyu.edu/rgrimm/xtc/rats-intro.html) - 
+a Java Packrat Parser generator - published by [Robert Grim](http://cs.nyu.edu/rgrimm/) as part of his 
+[xtc](http://cs.nyu.edu/rgrimm/xtc/) (eXTensible Compiler) project.
 
-Our code is based on version 2.3.1 (2012-04-04) of Rats!, which can be found 
+Our code is based on version 2.3.1 (2012-04-04) of Rats!, which we retrieved from  
 [here](http://cs.nyu.edu/rgrimm/xtc/#distribution). All changes made to the original code base will be listed in 
 [ChangeLog.txt](https://github.com/km-works/kmw-rats/blob/master/ChangeLog.txt)
 
