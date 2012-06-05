@@ -15,5 +15,5 @@ Both the original software and our modifications are licensed under a GPL2 Licen
 ## Purpose
 
 The purpose of this project is to enhance the runtime architecture of the generated packrat parser. 
-The problem with the original version is, that the generated parser code is thrown into a single Java class, and 
-for large grammars this can lead to an unmanagable size of the generated parser source.
+The problem with the original version is, that all generated parser code is thrown into a single Java class file. 
+For large grammars this can lead to an unmanagable size of the generated parser source.
