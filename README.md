@@ -24,6 +24,6 @@ On the other hand Rats! already supports modular grammar definitions, in fact on
 So why, we have asked ourselfs, not leverage this capability for a better runtime architecure, 
 and divide the generated code into managable parser modules? It's not that complicated after all.
 
-The deeper intention behind these obvious niceties is, however, our desire for parsing island grammars with a set of 
+The deeper intention behind these obvious niceties is, however, is our desire for parsing island grammars with a set of 
 compatible, runtime composable parsers. Thus not only managable parser modules, will be the issue, but even more, a 
-parser state that can be passed around in a parser stack ...
+parsing state, that can be passed around in a stack of modular parsers ...
