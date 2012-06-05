@@ -17,8 +17,8 @@ Both the original software and our modifications are licensed under a GPL2 Licen
 The purpose of this project is to enhance the runtime architecture of the Rats-generated Java packrat parser. 
 The problem with the original version is, that all generated parser code is thrown into a single Java class file. 
 For large grammars this can lead to an unmanagable size of the generated parser source. For example, Project Fortress, 
-one of the more prominent users of Rats!, generates a 2MB parser source file! With some IDEs your have problems with
-just opening this file in the editor.
+one of the more prominent users of Rats!, generates a single 2MB parser source file. Some IDEs complain if yor try to 
+open it an the editor view.
 
 On the other hand Rats! already supports modular grammar definitions, in fact one of its distinguishing strengths. So 
 why, we have asked ourselfs, not leverage this capabilities also for the runtime architecure, and divide the generated 
