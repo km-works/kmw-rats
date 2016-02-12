@@ -1,6 +1,6 @@
 /*
  * xtc - The eXTensible Compiler
- * Copyright (C) 2004-2012 Robert Grimm
+ * Copyright (C) 2004-2014 Robert Grimm
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@ import xtc.tree.Attribute;
  * Global constants.
  *
  * @author Robert Grimm
- * @version $Revision: 1.132 $
+ * @version $Revision: 1.133 $
  */
 public interface Constants {
 
@@ -35,20 +35,20 @@ public interface Constants {
   public static final int MAJOR = 2;
 
   /** The minor version number. */
-  public static final int MINOR = 3;
+  public static final int MINOR = 4;
 
   /** The revision number. */
-  public static final int REVISION = 1;
+  public static final int REVISION = 0;
 
   /** The complete version as a string. */
   public static final String VERSION = MAJOR + "." + MINOR + "." + REVISION;
 
   /** The copyright notice for <em>Rats&#033;</em>. */
-  public static final String COPY = "(C) 2004-2012 Robert Grimm";
+  public static final String COPY = "(C) 2004-2014 Robert Grimm";
 
   /** The copyright notice for all of xtc. */
   public static final String FULL_COPY =
-    "(C) 2004-2012 Robert Grimm and New York University";
+    "(C) 2004-2014 Robert Grimm and New York University";
 
   /** 
    * The start index for lines.  Note that the same constant is also

@@ -17,8 +17,8 @@ public class RatsTask extends Task {
 
   private File _main = null;    // Rats main module file
   private File _out = null;     // output directoy
-  private List<File> _roots = new ArrayList<File>();      // list of root search paths for dependent modules
-  private List<String> _opts = new ArrayList<String>();   // list of processing options
+  private final List<File> _roots = new ArrayList<File>();      // list of root search paths for dependent modules
+  private final List<String> _opts = new ArrayList<String>();   // list of processing options
 
   @Override
   public void execute() throws BuildException {

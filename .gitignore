@@ -1,7 +1,7 @@
 /lib/
-/rats/build/
-/rats/dist/
-/rats/nbproject/private/
-/rats-ant/dist/
-/rats-ant/build/
-/rats-ant/nbproject/private/
+/build/
+/dist/
+/classes/
+/nbproject/private/
+*.class
+*.jar

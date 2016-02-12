@@ -1,6 +1,6 @@
 /*
  * xtc - The eXTensible Compiler
- * Copyright (C) 2005, 2007 Robert Grimm
+ * Copyright (C) 2005, 2007, 2012 Robert Grimm
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -22,9 +22,9 @@ package xtc.parser;
  * An exception representing a {@link ParseError parse error}.
  *
  * @author Robert Grimm
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
-public class ParseException extends Exception {
+public class ParseException extends RuntimeException {
 
   /**
    * Create a new parse exception.
@@ -33,6 +33,25 @@ public class ParseException extends Exception {
    */
   public ParseException(String msg) {
     super(msg);
+  }
+
+  /**
+   * Create a new parse exception.
+   *
+   * @param msg The message.
+   * @param cause The cause.
+   */
+  public ParseException(String msg, Throwable cause) {
+    super(msg, cause);
+  }
+
+  /**
+   * Create a new parse exception.
+   *
+   * @param cause The cause.
+   */
+  public ParseException(Throwable cause) {
+    super(cause);
   }
 
 }

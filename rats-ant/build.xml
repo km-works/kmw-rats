@@ -4,10 +4,8 @@
     <import file="nbproject/build-impl.xml"/>
 
     <property environment="env"/>
-    <target name="-post-jar" depends="post-jar-libs">
-      <copy file="${dist.jar}" todir="../lib/"/>
-    </target>
-    <target name="post-jar-libs" if="env.JAVA_LIBS">
+    <target name="post-jar">
+      <echo message="Copying artifact ${dist.jar} to ${env.JAVA_LIBS}/km-works/"/>
       <copy file="${dist.jar}" todir="${env.JAVA_LIBS}/km-works/"/>
     </target>
 
