@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta  content="text/html; charset=UTF-8"  http-equiv="content-type">
+    <title></title>
+  </head>
+  <body>
+    <h1><a href="http://cs.nyu.edu/rgrimm/xtc/rats-intro.html"><i>Rats!</i>, a Packrat parser generator</a></h1>
+    <p>Grammars
+      for&nbsp;<i>Rats!</i>&nbsp;build
+      on the Parsing Expression Grammar (PEG) formalism described in Brian
+      Ford's&nbsp;<a  href="http://www.brynosaurus.com/pub/lang/peg.pdf">Parsing
+        Expression Grammars</a>&nbsp;paper.
+      However, since&nbsp;<i>Rats!</i>&nbsp;produces working parsers,
+      the syntax of&nbsp;<i>Rats!</i>&nbsp;grammars is somewhat
+      different from and more expressive than the PEG syntax described in the
+      paper. Additionally, to make grammars more easily reusable and extensible,&nbsp;<i>Rats</i> organizes
+      grammar fragments into modules. A good starting point for learning how to
+      use&nbsp;<i>Rats!</i>, in
+      addition to this introduction, are&nbsp;<i>Rats!</i>'
+      own grammar in package&nbsp;<code>xtc.parser</code>&nbsp;and the C and Java grammars
+      in package&nbsp;<code>xtc.lang</code>.</p>
+    <p>The
+      rest of this document covers the following topics:</p>
+    <ul>
+      <li><a  href="#syntax">Syntax</a></li>
+      <li><a  href="#overview">Overview
+          of Expressions and Operators</a></li>
+      <li><a  href="#modules">Grammar
+          Modules</a></li>
+      <li><a  href="#values">Productions
+          and Semantic Values</a></li>
+      <li><a  href="#pass-through">Passing
+          the Semantic Value Through</a></li>
+      <li><a  href="#options-etc">Options,
+          Repetitions, and Nested Choices</a></li>
+      <li><a  href="#void">Void and
+          Text-Only Productions</a></li>
+      <li><a  href="#generic">Generic
+          Productions</a></li>
+      <li><a  href="#list-valued">List-Valued
+          Productions</a></li>
+      <li><a  href="#left-recursion">Left-Recursive
+          Productions</a></li>
+      <li><a  href="#node-markers">Node
+          Markers in Generic Productions</a></li>
+      <li><a  href="#parameters">Modules,
+          Name Spaces, and Parameters</a></li>
+      <li><a  href="#modifications">Module
+          Modifications</a></li>
+      <li><a  href="#transient">Memoization
+          and Transient Productions</a></li>
+      <li><a  href="#attributes">Grammar
+          and Production Attributes</a></li>
+      <li><a  href="#parser-actions">Parser
+          Actions</a></li>
+    </ul>
+    <a  name="syntax"></a>
+    <h4>Syntax</h4>
+    <span>Here
+      is the syntax of&nbsp;</span><i>Rats!</i><span>'
+      grammar modules, expressed in PEG syntax:</span>
+    <pre>Module        &lt;- Spacing Intro Production* EOF
+
+Intro         &lt;- ModuleDecl Dependency* Header? Body? Footer? Option?
+ModuleDecl    &lt;- "module" FSpacing ModuleRef SEMICOLON
+Dependency    &lt;- Modification / Instantiation / Import
+Modification  &lt;- "modify" FSpacing ModuleRef ModuleTarget? SEMICOLON
+Instantiation &lt;- "instantiate" FSpacing ModuleRef ModuleTarget? SEMICOLON
+Import        &lt;- "import" FSpacing ModuleRef ModuleTarget? SEMICOLON
+ModuleRef     &lt;- QName ModuleParams?
+ModuleParams  &lt;- OPEN ( QName (COMMA QName)* )? CLOSE
+ModuleTarget  &lt;- "as" FSpacing QName
+Header        &lt;- "header" Spacing Action
+Body          &lt;- "body" Spacing Action
+Footer        &lt;- "footer" Spacing Action
+Option        &lt;- "option" FSpacing Attribute (COMMA Attribute)* SEMICOLON
+
+Production    &lt;- Full / Addition / Removal / Override
+Full          &lt;- PAttributes QName Identifier EQUAL Choice SEMICOLON
+Addition      &lt;- QName Identifier PLUSEQUAL
+                 ( SName ELLIPSIS SLASH Choice SEMICOLON
+                 / Choice SLASH SName ELLIPSIS SEMICOLON )
+Removal       &lt;- QName Identifier MINUSEQUAL
+                 SName ( COMMA SName )* SEMICOLON
+Override      &lt;- QName Identifier COLONEQUAL Choice SEMICOLON
+                 / QName Identifier COLONEQUAL ELLIPSIS SLASH Choice SEMICOLON
+                 / QName Identifier COLONEQUAL Choice SLASH ELLIPSIS SEMICOLON
+                 / PAttributes QName Identifier COLONEQUAL ELLIPSIS SEMICOLON
+PAttributes   &lt;- &amp;(QName Identifier EQUAL) / Attribute PAttributes
+Choice        &lt;- Sequence (SLASH Sequence)*
+Sequence      &lt;- !(SName ELLIPSIS / ELLIPSIS) SName? Voided*
+Voided        &lt;- ("void" Spacing COLON)? Prefix
+Prefix        &lt;- (AND / NOT / CARET / Identifier COLON
+                 / StringLit Spacing COLON)? Suffix
+Suffix        &lt;- Primary (QUESTION / STAR / PLUS)?
+Primary       &lt;- NullLit / QName / Literal / NodeMarker / Action 
+                 / OPEN Choice CLOSE
+
+NullLit       &lt;- "null" Spacing
+
+NodeMarker    &lt;- '@' Id Spacing
+
+Action        &lt;- '{' ActionBody* '}' Spacing
+ActionBody    &lt;- Action / CharLit / StringLit / MLComment / SLComment / !'}' .
+
+Attribute     &lt;- Identifier (OPEN AttValue CLOSE)?
+AttValue      &lt;- Integer / QName / StringLit Spacing
+
+QName         &lt;- Id ('.' Id)* Spacing
+SName         &lt;- LESS Id GREATER
+Identifier    &lt;- Id Spacing
+Id            &lt;- [a-zA-Z] [a-zA-Z0-9]*
+
+Literal       &lt;- ('_' / CharLit / StringLit / Class) Spacing
+CharLit       &lt;- ['] (Escape / !['\\] .)  [']
+StringLit     &lt;- ["] (Escape / !["\\] .)* ["]
+Class         &lt;- '[' (Char '-' Char / Char)* ']'
+Char          &lt;- Escape / ![-\]\\] .
+Escape        &lt;- '\\' [btnfr"'\[\\\]-] / '\\' 'u' HexQuad / OctalEscape
+OctalEscape   &lt;- '\\' ([0-3] OctDigit OctDigit / OctDigit OctDigit / OctDigit)
+
+Integer       &lt;- (HexNumber / OctNumber / Number) Spacing
+HexNumber     &lt;- '0' [xX] HexDigit+
+HexQuad       &lt;- HexDigit HexDigit HexDigit HexDigit
+HexDigit      &lt;- [0-9a-fA-F]
+Number        &lt;- '0' / NZDigit Digit*
+NZDigit       &lt;- [1-9]
+Digit         &lt;- [0-9]
+OctNumber     &lt;- '0' OctDigit+
+OctDigit      &lt;- [0-7]
+
+ELLIPSIS      &lt;- "..." Spacing
+PLUSEQUAL     &lt;- "+=" Spacing
+MINUSEQUAL    &lt;- "-=" Spacing
+COLONEQUAL    &lt;- ":=" Spacing
+COMMA         &lt;- ',' Spacing
+EQUAL         &lt;- '=' Spacing
+SLASH         &lt;- '/' ![/*] Spacing
+AND           &lt;- '&amp;' Spacing
+NOT           &lt;- '!' Spacing
+CARET         &lt;- '^' Spacing
+COLON         &lt;- ':' Spacing
+QUESTION      &lt;- '?' Spacing
+STAR          &lt;- '*' Spacing
+PLUS          &lt;- '+' Spacing
+OPEN          &lt;- '(' Spacing
+CLOSE         &lt;- ')' Spacing
+SEMICOLON     &lt;- ';' Spacing
+LESS          &lt;- '&lt;'
+GREATER       &lt;- '&gt;' Spacing
+
+Spacing       &lt;- (Space / SLComment / MLComment)*
+FSpacing      &lt;- (Space / SLComment / MLComment)+
+Space         &lt;- ' ' / '\t' / '\f' / EOL
+SLComment     &lt;- "//" (![\n\r] .)* EOL
+MLComment     &lt;- "/*" ('*' !'/' / !'*' .)* "*/"
+EOL           &lt;- '\r' '\n' / '\r' / '\n'
+EOF           &lt;- !.
+</pre><span>Note
+      that&nbsp;</span><code>QName</code><span>&nbsp;stands for "qualified name,"&nbsp;</span><code>SName</code><span>&nbsp;stands for "sequence name,"&nbsp;</span><code>PAttributes</code><span>&nbsp;for "production attributes,"&nbsp;</span><code>AttValue</code><span>&nbsp;for "attribute value,"&nbsp;</span><code>NZDigit</code><span>&nbsp;for "non-zero digit,"&nbsp;</span><code>FSpacing</code><span>&nbsp;for "forced spacing,"&nbsp;</span><code>SLComment</code><span>&nbsp;for "single-line comment,"
+      and&nbsp;</span><code>MLComment</code><span>&nbsp;for "multi-line comment."</span><span></span><a
+
+       name="overview"></a>
+    <h4>Overview
+      of Expressions and Operators</h4>
+    <span>The
+      biggest difference between parsing expression grammars and the more
+      familiar context-free grammars (CFGs) is the use of&nbsp;</span><i>ordered</i><span>&nbsp;choices instead of symmetric
+      choices. Hence, the different options in a PEG choice (and also a&nbsp;</span><i>Rats!</i><span>&nbsp;choice) are separated by a
+      slash&nbsp;</span><code>/</code><span>&nbsp;instead of a vertical bar&nbsp;</span><code>|</code><span>.
+      Furthermore, to emphasize that PEGs define how to&nbsp;</span><i>parse</i><span>&nbsp;a language instead of how to
+      generate a language, PEGs use a left arrow&nbsp;</span><code>&lt;-</code><span>&nbsp;instead of the right arrow&nbsp;</span><code>-&gt;</code><span>&nbsp;used in CFGs. Note that&nbsp;</span><i>Rats!</i><span>&nbsp;uses an equal sign instead.</span>
+    <p>Otherwise,
+      PEGs have many of the same expressions and operators as other syntax and
+      grammar formalisms. For example, the any character constant&nbsp;<code>.</code>&nbsp;(<code>_</code>&nbsp;for&nbsp;<i>Rats!</i>) matches any
+      character in the input, and a character class, as defined by the&nbsp;<code>[]</code>&nbsp;operator, matches any of the
+      characters in the class. The option operator&nbsp;<code>?</code>&nbsp;makes an expression
+      optional, and the star&nbsp;<code>*</code>&nbsp;and plus&nbsp;<code>+</code>&nbsp;operators indicate
+      zero-or-more and one-or-more repetitions, respectively. Somewhat less
+      common are the and&nbsp;<code>&amp;</code>&nbsp;and not&nbsp;<code>!</code>&nbsp;operators, which denote
+      syntactic predicates. Expressions in a syntactic predicate must match (for
+      the and&nbsp;<code>&amp;</code>&nbsp;operator) or not match (for
+      the not&nbsp;<code>!</code>&nbsp;operator) the input, though
+      the corresponding text in the input is&nbsp;<i>not</i>&nbsp;consumed.</p>
+    <p><i>Rats!</i>&nbsp;grammars differ from PEGs in
+      that they have additional expressions and operators necessary for
+      generating actual parsers. Most importantly,&nbsp;<i>Rats!</i>&nbsp;grammars include&nbsp;<i>actions</i>&nbsp;that generate semantic
+      values. Actions are surrounded by curly brackets&nbsp;<code>{}</code>,
+      just like blocks of code in C, C++, or Java. To access such semantic
+      values,&nbsp;<i>Rats!</i>&nbsp;grammars can also include&nbsp;<i>bindings</i>. Bindings
+      first specify the variable name, followed by a colon&nbsp;<code>:</code>,
+      and then the expression to be bound. Additionally,&nbsp;<i>Rats!</i>&nbsp;grammars support&nbsp;<i>semantic
+        predicates</i>, which are denoted by the and&nbsp;<code>&amp;</code>&nbsp;operator directly followed
+      by an action (which must be an expression evaluating to a boolean value).
+      Furthermore,&nbsp;<i>Rats!</i>&nbsp;grammars support&nbsp;<i>text
+        matching expressions</i>, which first specify the text to be matched as
+      a string literal, followed by a colon&nbsp;<code>:</code>,
+      and then the expression to be matched. A text matching expression</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>"</code><i>text</i><code>":</code><i>expr</i></p>
+    <p>is
+      equivalent to the expression</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>fresh-variable</i><code>:</code><i>expr</i><code>&nbsp;&amp;{&nbsp;"</code><i>text</i><code>".equals(</code><i>fresh-variable</i><code>)&nbsp;}</code></p>
+    <p>but
+      implemented more efficiently.&nbsp;<i>Rats!</i>&nbsp;grammars also support a&nbsp;<i>voiding operator</i>,
+      which is specified as "<code>void:</code>" followed by an expression,&nbsp;<i>node markers</i>, which
+      are specified as an at sign '<code>@</code>' immediately followed by an
+      identifier, and&nbsp;<i>parser
+        actions</i>, which are actions prefixed by a caret '<code>^</code>'.
+      Voided expressions and node markers help with the automatic generation of
+      abstract syntax trees and are explained&nbsp;<a
+
+         href="#generic">here</a>.
+      Parser actions provide a low-level interface for extending parsers
+      generated by&nbsp;<i>Rats!</i>&nbsp;and are explained&nbsp;<a
+
+         href="#parser-actions">here</a>.</p>
+    <p>Other
+      differences between PEGs and&nbsp;<i>Rats!</i>&nbsp;grammars include that, as
+      already mentioned&nbsp;<i>Rats!</i>&nbsp;uses an underscore '<code>_</code>'
+      as the any character constant, while PEGs use a dot '<code>.</code>'.
+      Furthermore,&nbsp;<i>Rats!</i>,
+      just like C/C++/Java, requires that single-quoted literals specify exactly
+      one character, while double-quoted literals may specify an arbitrary
+      number of characters. Escape sequences include basic C/C++/Java escapes
+      such as '<code>\n</code>' and '<code>\\</code>', Java Unicode escapes such
+      as '<code>\u00ff</code>', and '<code>\[</code>', '<code>\-</code>', and '<code>\]</code>'
+      for character class specifications.&nbsp;<i>Rats!</i>&nbsp;grammars also use standard
+      C/C++/Java comments. Note that, while&nbsp;<i>Rats!</i>supports
+      Unicode, it only supports 16 bit characters in the basic multilingual
+      plane (i.e., with code points between U+0000 and U+FFFF). Expressions
+      recognizing supplementary characters (i.e., with code points between
+      U+10000 and U+10FFFF) need to use&nbsp;<a
+
+         href="http://java.sun.com/developer/technicalArticles/Intl/Supplementary/">Java's
+        encoding</a>&nbsp;as a pair
+      of&nbsp;<code>char</code>&nbsp;values in the surrogates
+      range.<a  name="modules"></a></p>
+    <h4>Grammar
+      Modules</h4>
+    <span>A&nbsp;</span><i>Rats!</i><span>&nbsp;grammar consists of one
+      top-level module, which is the module specified on the command line when
+      invoking&nbsp;</span><i>Rats!</i><span>,
+      and zero or more dependent modules. Each module starts with several
+      declarations, whose syntax follows from&nbsp;</span><code>Intro</code><span>&nbsp;in the&nbsp;</span><i>Rats!</i><span>&nbsp;syntax specification&nbsp;</span><a
+
+       href="#syntax">above</a><span>:</span>
+    <ul>
+      <li>The&nbsp;<code>module</code>&nbsp;declaration specifies the
+        fully qualified name of a grammar module. Optionally, the module may
+        have one or more parameters, which are treated as module names and are
+        replaced with the actual arguments throughout the module, notably in
+        module dependency declarations and in qualified nonterminals (a
+        qualified nonterminal consists of the module name, followed by a dot '<code>.</code>',
+        followed by the unqualified nonterminal). Module parameters are
+        discussed in more detail&nbsp;<a
+
+           href="#parameters">here</a>.</li>
+      <li>Zero or more module dependency declarations specify how the current
+        module depends on other modules.&nbsp;<i>Rats!</i>&nbsp;supports three types of
+        such dependency declarations. First, import dependencies make another
+        module's nonterminals referenceable from within the current module.
+        Second, modification dependencies make another module's productions
+        available for modification in the current module. Each module can have
+        at most one modification dependency. Finally, instantiation dependencies
+        instantiate other modules (typically, modules that require arguments)
+        and make their names available for use in other dependencies. The
+        effects of import and instantiation declarations are discussed in more
+        detail&nbsp;<a  href="#parameters">here</a>;
+        module modifications are discussed in detail&nbsp;<a
+
+           href="#modifications">here</a>.</li>
+      <li>The action code following an optional&nbsp;<code>header</code>&nbsp;declaration is copied into
+        the parser just before the parser class declaration. If a grammar spans
+        several modules, all unique header actions are copied into the parser
+        class.</li>
+      <li>The action code following an optional&nbsp;<code>body</code>&nbsp;declaration is copied into
+        the body of the parser class. Again, if a grammar spans several modules,
+        all unique body actions are copied into the parser class.</li>
+      <li>The action code following an optional&nbsp;<code>footer</code>&nbsp;declaration is copied just
+        after the parser class declaration. As for header and body declarations,
+        if a grammar spans several modules, all unique footer actions are copied
+        into the parser class.</li>
+      <li>An optional&nbsp;<code>option</code>&nbsp;declaration specifies
+        parser options. Each option is expressed as an attribute, which is an
+        identifier specifying the attribute's name followed by an optional
+        integer literal, qualified name, or string within parentheses&nbsp;<code>()</code>&nbsp;specifying the attribute's
+        value. The currently recognized options are discussed&nbsp;<a
+
+           href="#attributes">here</a>.</li>
+    </ul>
+    <p>A
+      grammar's top-level module (i.e., the module specified on the command line
+      when invoking&nbsp;<i>Rats!</i>)
+      is treated somewhat differently from its dependent modules:</p>
+    <ul>
+      <li>By default, the Java package and class names of the generated parser
+        are automatically deduced from the fully qualified name of the top-level
+        module. For example, the default package and class names for module&nbsp;<code>xtc.parser.PGrammar</code>&nbsp;would be&nbsp;<code>xtc.parser</code>&nbsp;and&nbsp;<code>PGrammar</code>,
+        respectively. However, this default can be overriden through the&nbsp;<a
+
+           href="#parser-attribute"><code>parser</code></a>&nbsp;option (and is, in fact,
+        overriden by that module).</li>
+      <li>Option declarations are outside the module system, and only the
+        top-level module's options are observed by the parser generator. The
+        exceptions are the following options. First, the&nbsp;<a
+
+           href="#stateful-attribute"><code>stateful</code></a>option
+        specifies a global state object and must have the same value across all
+        of a grammar's modules (if it appears at all). Second, the&nbsp;<a
+
+           href="#set"><code>setOfString</code></a>&nbsp;option specifies a global
+        set of strings and has the corresponding field's name as its value; each
+        unique value results in its own global field. Finally the&nbsp;<a
+
+           href="#flag"><code>flag</code></a>&nbsp;option specifies a global
+        boolean field and has the corresponding field's name as its value; each
+        unique value results in its own global field.</li>
+      <li>The top-level module must have at least one production that is marked
+        as&nbsp;<a  href="#public-attribute"><code>public</code></a>,
+        which indicates that that production is a top-level production and thus
+        visible outside the parser class. Other modules' public productions are
+        not treated as top-level production for the grammar.</li>
+      <li>Finally, because the top-level module is directly instantiated, it
+        cannot have any parameters. Only dependent modules may have parameters;
+        the corresponding arguments are specified when importing, instantiating,
+        or modifying the module.</li>
+    </ul>
+    <p>Similar
+      to the Java compiler automatically loading dependent Java classes,&nbsp;<i>Rats!</i>&nbsp;automatically loads
+      dependent modules from the file system. For example, when looking for the
+      dependent module<code>xtc.util.Spacing</code>,&nbsp;<i>Rats!</i>&nbsp;searches for the file&nbsp;<code>xtc/util/Spacing.rats</code>&nbsp;on Unix-like systems. One or
+      more root directories for this search can be specified through the&nbsp;<code>-in</code>&nbsp;command line option.</p>
+    <p>A
+      grammar's modules can be visualized by using&nbsp;<i>Rats!</i>'&nbsp;<code>-html</code>&nbsp;command
+      line option combined with either the&nbsp;<code>-instantiated</code>,&nbsp;<code>-applied</code>, or&nbsp;<code>-processed</code>&nbsp;command line option to
+      specify the stage of&nbsp;<i>Rats!</i>'
+      processing. In all three cases,&nbsp;<i>Rats!</i>&nbsp;creates a hyperlinked
+      version of the grammar at that processing stage. Make sure that the&nbsp;<a
+
+         href="http://cs.nyu.edu/rgrimm/xtc/grammar.css"><code>grammar.css</code></a>&nbsp;stylesheet is in the same
+      directory as the generated HTML file(s). The output directory can be
+      controlled with the&nbsp;<code>-out</code>&nbsp;command line option.<a  name="values"></a></p>
+    <h4>Productions
+      and Semantic Values</h4>
+    <span>After
+      the module declarations follow the productions, with each production
+      defining how to parse a nonterminal. Regular modules may only contain full
+      productions, whose syntax follows from&nbsp;</span><code>Full</code><span>&nbsp;in the&nbsp;</span><i>Rats!</i><span>&nbsp;syntax specification&nbsp;</span><a
+
+       href="#syntax">above</a><span>.
+      Module modifications may also contain alternative additions, alternative
+      removals, and production overrides, which are discussed&nbsp;</span><a
+
+       href="#modifications">below</a><span>.</span>
+    <p>Each
+      full production first lists zero or more attributes, then declares the
+      type of the semantic value it returns, and then specifies the name of the
+      nonterminal it defines (which must be unqualified). The definition follows
+      after the equals sign&nbsp;<code>=</code>&nbsp;and is terminated by a
+      semicolon&nbsp;<code>;</code>.
+      Each full production can either be public, protected, or private, as
+      indicated by the corresponding attribute of the same name. A public
+      production is a top-level production for the grammar if it appears in the
+      top-level module. Otherwise, it is treated as a protected production,
+      which is the default, can be omitted, and makes the production
+      referenceable from other modules. Finally, a private production can only
+      be referenced from within the same module. Note that the use of the&nbsp;<code>transient</code>&nbsp;attribute is explained<a  href="#transient">here</a>.
+      All per-production attributes supported by&nbsp;<i>Rats!</i>&nbsp;are discussed&nbsp;<a
+
+         href="#attributes">here</a>.
+      Further note that types cannot be primitive types, such as&nbsp;<code>int</code>;
+      though, as discussed&nbsp;<a  href="#void">here</a>,&nbsp;<code>void</code>&nbsp;is
+      allowed.</p>
+    <p>A
+      production's semantic value is usually defined in an action by setting the&nbsp;<code>yyValue</code>&nbsp;variable
+      (so named in deference to the&nbsp;<a
+
+         href="http://dinosaur.compilertools.net/">Yacc</a>&nbsp;parser
+      generator) to the desired value. The action code can use characters or
+      strings matched by a literal as well as semantic values returned by nested
+      nonterminals through&nbsp;<i>bindings</i>.
+      As specified&nbsp;<a  href="#syntax">above</a>,
+      each binding first declares the variable, followed by a colon, and then
+      the bound expression.</p>
+    <p><a
+
+         name="production-example"></a>For example, this is the production for
+      the&nbsp;<code>FullProduction</code>&nbsp;nonterminal from&nbsp;<i>Rats!</i>'
+      own grammar:</p>
+    <pre>FullProduction FullProduction =
+   atts:ProductionAttributes
+   type:Name nt:UnqualifiedNonTerminal "=":Symbol choice:Choice ";":Symbol
+      { yyValue = new FullProduction(atts.list(), type, nt, choice); }
+   ;
+</pre>
+    <p>The
+      production first declares the type of the semantic value it returns to be&nbsp;<code>FullProduction</code>&nbsp;(which only coincidentally
+      has the same name as the production). In the definition, the semantic
+      value of recognizing the production's attributes is bound to the variable&nbsp;<code>atts</code>, the
+      semantic value returned by the&nbsp;<code>Name</code>&nbsp;production is bound to the
+      variable&nbsp;<code>type</code>,
+      the semantic value returned by the<code>UnqualifiedNonTerminal</code>&nbsp;production is bound to the
+      variable&nbsp;<code>nt</code>,
+      and the semantic value returned by the&nbsp;<code>Choice</code>&nbsp;production is bound to the
+      variable&nbsp;<code>choice</code>.
+      The action code then uses these variables to create a new&nbsp;<code>FullProduction</code>&nbsp;object and assigns that
+      object to&nbsp;<code>yyValue</code>,
+      thus making the newly created object the production's semantic value.</p>
+    <p>In
+      the generated parser,&nbsp;<i>Rats!</i>&nbsp;declares the types of
+      variables as following:</p>
+    <ul>
+      <li>Variables bound to the any character constant&nbsp;<code>_</code>,
+        to a character literal, or a character class are declared as&nbsp;<code>char</code>.</li>
+      <li>Variables bound to a string literal are declared as&nbsp;<code>String</code>.</li>
+      <li>Variables bound to a nonterminal are declared to be of the type of the
+        corresponding production. For example, the declared type of the&nbsp;<code>Name</code>&nbsp;production from the above
+        example is&nbsp;<code>String</code>&nbsp;and, consequently,&nbsp;<code>type</code>&nbsp;is declared to be a&nbsp;<code>String</code>&nbsp;as well.</li>
+      <li>Similarly,&nbsp;<code>yyValue</code>&nbsp;is declared to be of the
+        type of the corresponding production.</li>
+    </ul>
+    <a  name="pass-through"></a>
+    <h4>Passing
+      the Semantic Value Through</h4>
+    <span>Sometimes,
+      the semantic value of a production is the same as the semantic value of
+      one of the expressions appearing in that production. To avoid first
+      binding that expression to some variable and then assigning that variable
+      to&nbsp;</span><code>yyValue</code><span>&nbsp;, it is possible to directly
+      bind&nbsp;</span><code>yyValue</code><span>.</span>
+    <p>For
+      example, the production for the&nbsp;<code>Header</code>&nbsp;nonterminal from&nbsp;<i>Rats!</i>'
+      own grammar makes use of this feature:</p>
+    <pre>Action Header = "header":Word yyValue:Action ;
+</pre><span>An
+      equivalent, but more verbose definition might look like this:</span>
+    <pre>Action Header = "header":Word a:Action { yyValue = a; } ;
+</pre><a  name="options-etc"></a>
+    <h4>Options,
+      Repetitions, and Nested Choices</h4>
+    <span>In
+      general,&nbsp;</span><i>Rats!</i><span>&nbsp;lifts options, repetitions,
+      and nested choices into their own, newly generated productions. It also
+      desugars options and repetitions into equivalent productions without the
+      option or repetition operators. Note that nested choices are&nbsp;</span><i>not</i><span>&nbsp;lifted if they are the last
+      element in a sequence. Further note that repetitions are&nbsp;</span><i>not</i><span>&nbsp;desugared if they appear in
+      a&nbsp;</span><a  href="#transient">transient</a><span>&nbsp;production. Finally, options
+      are&nbsp;</span><i>not</i><span>&nbsp;desugared if they are not
+      bound or if&nbsp;</span><i>Rats</i><span>&nbsp;can automatically deduce the
+      value of the bound optional expression.</span>
+    <p>This
+      lifting and desugaring raises several questions:</p>
+    <ul>
+      <li>What is the semantic value of an expression before applying the option
+        or repetition operator? Similarly, what is the semantic value of a
+        nested choice?</li>
+      <li>For options and repetitions, what is the semantic value after applying
+        the option or repetition operator?</li>
+      <li>Finally, for each of these expressions, what is the type of the newly
+        generated production?</li>
+    </ul>
+    <span>We
+      now answer these questions in turn.</span>
+    <p>To
+      determine the semantic value of an expression before applying the option
+      or repetition operator and that of a nested choice,&nbsp;<i>Rats!</i>&nbsp;generally requires that each
+      expression has its own, embedded action that defines the corresponding
+      value. As a result, the definition of a production may contain several
+      actions that all assign values to&nbsp;<code>yyValue</code>,
+      even in nested expressions.</p>
+    <p>However,
+      for some expressions,&nbsp;<i>Rats!</i>&nbsp;is able to automatically
+      deduce their semantic values. Notably, if a nonterminal is optional or
+      repeated, the semantic value of the expression before applying the option
+      or repetition operator simply is the semantic value of the nonterminal's
+      production. Similarly, if a nonterminal is the only expression appearing
+      in an option, the semantic value for that option simply is the semantic
+      value of the nonterminal's production. In these cases, no embedded actions
+      are necessary.</p>
+    <p>For
+      options, the semantic value after applying the option operator is the
+      semantic value of the expression, if that expression can be matched in the
+      input. Otherwise, the overall semantic value is simply<code>null</code>.
+      For repetitions, the semantic value after applying the repetition operator
+      is a {@link xtc.util.Pair}. Pairs are used to implement singly-linked
+      lists and contain the semantic values of the repeated expressions. In the
+      case of zero matches, the pair is the special {@link xtc.util.Pair#EMPTY
+      empty pair}, which is also accessible through the type-safe {@link
+      xtc.util.Pair#empty()} method.&nbsp;<i>Rats!</i>&nbsp;uses pairs as they allow for
+      efficient addition of an element to the front of a sequence of pairs. Note
+      that pairs can easily be converted into a Java Collections Framework list
+      by calling {@link xtc.util.Pair#list()} (as illustrated in the production
+      for&nbsp;<i>Rats!</i>&nbsp;productions
+      shown&nbsp;<a  href="#production-example">above</a>).</p>
+    <p>The
+      type of a newly generated production representing a desugared option
+      generally is&nbsp;<code>Object</code>.
+      However, if&nbsp;<i>Rats!</i>&nbsp;can automatically determine
+      the semantic value of an optional expression, it uses the more specific
+      type (which, in the case of desugared optional nonterminals, is the type
+      of the corresponding production). The type of a newly generated production
+      representing a desugared repetition always is&nbsp;<code>xtc.util.Pair</code>.
+      Finally, the type of a newly generated production representing a lifted
+      choice always is&nbsp;<code>Object</code>.</p>
+    <p>To
+      illustrate the general case of repetitions and nested choices, consider
+      the following snippet from&nbsp;<i>Rats!</i>'
+      own grammar, which is taken from the&nbsp;<code>Terminal</code>&nbsp;production and parses
+      character class specifications:</p>
+    <pre>   / '['
+      l:( c1:ClassChar '-' c2:ClassChar
+         { 
+            yyValue = new CharRange(Utilities.unescape(c1).charAt(0),
+                                    Utilities.unescape(c2).charAt(0));
+         }
+        / c1:ClassChar
+         {
+            yyValue = new CharRange(Utilities.unescape(c1).charAt(0));
+         }
+        )*
+     ']' Spacing
+      { yyValue = new CharClass(l.list()); }
+</pre><span>The
+      nested choice has its own actions, which create character ranges as their
+      semantic values. The parser collects these character ranges into a
+      sequence of pairs, which is then bound to the&nbsp;</span><code>l</code><span>&nbsp;variable. The outer action
+      uses this sequence of pairs to create a new character class as the overall
+      semantic value (converting the sequence of pairs into a Java Collections
+      Framework list along the way).</span>
+    <p><a
+
+         name="sequence-example"></a>To illustrate the automatic deduction of a
+      semantic value, consider the production for sequences from&nbsp;<i>Rats!</i>'
+      own grammar:</p>
+    <pre>Sequence Sequence =
+   !Ellipsis n:SequenceName? l:Voided*
+      { yyValue = new Sequence(n, l.list()); }
+   ;
+</pre><span>A
+      sequence essentially consists of zero or more repetitions of the&nbsp;</span><code>Voided</code><span>&nbsp;nonterminal; no embedded
+      action is necessary for the repetition.&nbsp;</span><i>Rats!</i><span>&nbsp;automatically collects the
+      individual semantic values into a sequence of pairs. The optional sequence
+      name preceding the repeated&nbsp;</span><code>Voided</code><span>&nbsp;nonterminal simply is an
+      identifier between less-than&nbsp;</span><code>&lt;</code><span>&nbsp;and greater-than&nbsp;</span><code>&gt;</code><span>&nbsp;signs and is used when&nbsp;</span><a  href="#modifications">modifying
+      productions</a><span>.
+      It can also be used for documentation, as&nbsp;</span><i>Rats!</i><span>&nbsp;tries to preserve it
+      throughout its internal processing, so that it will be included in the
+      generated parser (within a comment). The corresponding optional expression
+      does not need an embedded action either. The syntactic predicate&nbsp;</span><code>!Ellipsis</code><span>&nbsp;excludes sequence names
+      followed by an ellipsis&nbsp;</span><code>...</code><span>&nbsp;or an ellipsis by itself
+      from sequences, as they are used to&nbsp;</span><a
+
+       href="#modifications">modify
+      productions</a><span>.</span><span></span><a
+
+       name="void"></a>
+    <h4>Void
+      and Text-Only Productions</h4>
+    <span>Adding
+      actions to create a production's semantic value can seem tedious and may
+      make grammars unnecessarily verbose. To reduce the need for explicit
+      actions,&nbsp;</span><i>Rats!</i><span>&nbsp;supports special types of
+      productions, which need&nbsp;</span><i>no</i><span>&nbsp;semantic actions at all. We
+      now discuss void and text-only productions, which are especially useful
+      for recognizing lexical syntax (such as identifiers, punctuation, numbers,
+      and so on).</span>
+    <p>A&nbsp;<i>void production</i>&nbsp;is a production that
+      declares the type of its semantic value to be&nbsp;<code>void</code>.
+      Such a production does not require any actions, but it may not be bound to
+      an identifier either. A void production is typically used for ignored
+      spacing or punctuation elements. Void productions also improve the
+      accuracy of&nbsp;<i>Rats!</i>'
+      deduction of a compound expression's semantic value. If the compound
+      expression only contains a single non-void nonterminal, that nonterminal's
+      semantic value is used as the semantic value of the entire expression.</p>
+    <p>Here
+      is an example void production from&nbsp;<i>Rats!</i>'
+      own grammar:</p>
+    <pre>transient void Spacing =
+  (Space / LineTerminator / TraditionalComment/ EndOfLineComment)*
+  ;
+</pre><span>This
+      production matches space characters, line terminators, and comments. Note
+      that the&nbsp;</span><code>transient</code><span>&nbsp;keyword is explained&nbsp;</span><a
+
+       href="#transient">here</a><span>.</span>
+    <p>The
+      fact the&nbsp;<code>Spacing</code>&nbsp;is declared as&nbsp;<code>void</code>&nbsp;is then used in the
+      production for&nbsp;<code>Symbol</code>:</p>
+    <pre>String Symbol = SymbolCharacters Spacing ;
+</pre><span>No
+      action is necessary because only the&nbsp;</span><code>SymbolCharacters</code><span>&nbsp;nonterminal produces a
+      semantic value.&nbsp;</span><i>Rats!</i><span>&nbsp;automatically detects this
+      case and passes the value of&nbsp;</span><code>SymbolCharacters</code><span>&nbsp;through.</span>
+    <p>In
+      general,&nbsp;<i>Rats!</i>&nbsp;tries to deduce a compound
+      expression's value, even if it is nested within another expression,
+      ignoring nonterminals referencing a void production or explicitly voided
+      expressions. Furthermore, for repetitions, options, and nested choices
+      that do not appear as the last expression in a sequence, it treats the&nbsp;<em>entire</em>&nbsp;repetition,
+      option, or nested choice as void, if all component expressions are
+      nonterminals referencing void productions, explicitly voided expressions,
+      or predicates. For example, if&nbsp;<code>nt</code>&nbsp;references a void
+      production, then the expression "<code>nt*</code>" is equivalent to "<code>void:(nt*)</code>"
+      (note that the parentheses are not strictly necessary).</p>
+    <p>A&nbsp;<i>text-only production</i>&nbsp;is a production that
+      declares the type of its semantic value to be a&nbsp;<code>String</code>,
+      does not contain any bindings to&nbsp;<code>yyValue</code>&nbsp;nor actions that reference&nbsp;<code>yyValue</code>&nbsp;and
+      references only other text-only productions (if any). The semantic value
+      of a text-only production is the text matched in the input, represented as
+      a&nbsp;<code>String</code>.
+      Note that the above&nbsp;<code>Symbol</code>&nbsp;production is not text-only
+      because it references a void production. Also note that bindings (besides
+      to&nbsp;<code>yyValue</code>)
+      and semantic predicates may appear in text-only productions.</p>
+    <p><a
+
+         name="transient-example"></a>To illustrate text-only productions,
+      consider the following productions from&nbsp;<i>Rats!</i>'
+      own grammar:</p>
+    <pre>String StringLiteral            = ["] ( EscapeSequence / !["\\] _ )* ["] ;
+
+transient String EscapeSequence = 
+   '\\' ( [btnfr\"\'\-\[\\\]] / 'u' HexNumber ) ;
+transient String HexNumber      = HexDigit HexDigit HexDigit HexDigit ;
+transient String HexDigit       = [0-9a-fA-F] ;
+</pre><span>The&nbsp;</span><code>StringLiteral</code><span>&nbsp;production only references
+      terminals and other productions that are also text-only. As a result, its
+      semantic value is the text matched in the input, exactly what we expect
+      from a production that matches string literals. Note that the&nbsp;</span><code>transient</code><span>&nbsp;keyword is explained&nbsp;</span><a
+
+       href="#transient">here</a><span>.</span>
+    <p>A
+      note on bindings&nbsp;<i>within</i>&nbsp;text-only productions: When
+      binding to a character terminal (the any character constant, a character
+      class, or a character literal), the bound variable is a&nbsp;<code>char</code>&nbsp;(just as for all other
+      productions). However, for&nbsp;<i>all</i>&nbsp;other expressions (including
+      options, repetitions, and nested choices), the value of the bound variable
+      always is a string representing the text matched by that expression in the
+      input. For options that cannot be matched in the input, the value is the
+      empty string (and not&nbsp;<code>null</code>).<a
+
+         name="generic"></a></p>
+    <h4>Generic
+      Productions</h4>
+    <span>Void
+      and text-only productions typically help with recognizing lexical syntax;
+      though, they are of limited use for productions that recognize
+      hierarchical syntax, such as the productions for</span><code>FullProduction</code><span>,&nbsp;</span><code>Header</code><span>,
+      or&nbsp;</span><code>Sequence</code><span>&nbsp;shown above. Generic
+      productions help simplify productions for hierarchical syntax. Just as for
+      void and text-only productions, no explicit semantic actions are required.</span>
+    <p>A&nbsp;<i>generic production</i>&nbsp;is a production that
+      declares&nbsp;<code>generic</code>&nbsp;as its type and returns a
+      semantic value that is a {@link xtc.tree.GNode generic node}.&nbsp;<i>Rats!</i>&nbsp;automatically creates the
+      production's semantic value: its name is the name of the production, and
+      its children are the semantic values of the component expressions in the
+      recognized sequence, with the exception of any voided expressions (using
+      the<code>void:</code>&nbsp;operator),
+      void nonterminals, and character terminals, which are ignored.</p>
+    <p>For
+      example, we could rewrite the production for&nbsp;<a
+
+         href="#production-example"><code>FullProduction</code></a>&nbsp;as a generic production:</p>
+    <pre>generic FullProduction =
+   ProductionAttributes
+   Name UnqualifiedNonTerminal void:"=":Symbol Choice void:";":Symbol ;
+   ;
+</pre><span>The
+      rewritten production has a generic node as its semantic value; the grammar
+      author thus does not need to define a&nbsp;</span><code>FullProduction</code><span>&nbsp;class to represent the
+      semantic value. Furthermore, the rewritten production is equivalent to the
+      following production with an explicit semantic action:</span>
+    <pre>Node FullProduction =
+   v1:ProductionAttributes
+   v2:Name v3:UnqualifiedNonTerminal "=":Symbol v4:Choice ";":Symbol
+     { yyValue = GNode.create("Production", v1, v2, v3, v4); }
+   ;
+</pre><span>The
+      two symbol references are not bound because they are explicitly voided.</span>
+    <p>Options,
+      repetitions, and nested choices in generic productions are treated just
+      like the corresponding expressions in regular productions. In other words,
+      they may be desugared and lifted into their own productions. As a result,
+      they require explicit actions to create their semantic values, unless, of
+      course,&nbsp;<i>Rats!</i>&nbsp;can automatically determine
+      the corresponding values.</p>
+    <p>The
+      creation of generic syntax tree nodes can be customized through the&nbsp;<a
+
+         href="#attributes">factory
+        attribute</a>, which specifies a class different from&nbsp;<code>GNode</code>.
+      For example,&nbsp;<code>factory(MyTreeFactory)</code>&nbsp;causes&nbsp;<em>Rats!</em>&nbsp;to emit invocations to&nbsp;<code>MyTreeFactory.create</code>&nbsp;methods instead of&nbsp;<code>GNode.create</code>.<a
+
+         name="list-valued"></a></p>
+    <h4>List-Valued
+      Productions</h4>
+    <p>If
+      a grammar has the&nbsp;<code>flatten</code>&nbsp;attribute, pairs resulting
+      from a repeated expression are treated somewhat differently in generic
+      productions: the values on the list are added to the production's generic
+      node as&nbsp;<i>individual</i>&nbsp;children. For example,
+      consider this production for recognizing parameter lists in C:</p>
+    <pre>generic ParameterList =
+   ParameterDeclaration (void:",":Symbol ParameterDeclaration)* ;
+</pre><span>Because
+      the semantic values of the embedded repetition are added as invidividual
+      children to the production's generic node, that node's children are all
+      parameter declarations, which is exactly the desired behavior.</span>
+    <p>Alternatively,&nbsp;<i>Rats!</i>&nbsp;can
+      automatically deduce the semantic value of productions with a&nbsp;<code>Pair</code>&nbsp;type. The production's value
+      is a list of all of a sequence's component expressions. For example,
+      consider this rewritten production for recognizing parameter lists:</p>
+    <pre>Pair&lt;Node&gt; ParameterList =
+   ParameterDeclaration (void:",":Symbol ParameterDeclaration)* ;
+</pre><span>Beacuse
+      the declared type is&nbsp;</span><code>Pair&lt;Node&gt;</code><span>,&nbsp;</span><i>Rats!</i><span>&nbsp;automatically deduces the
+      semantic value of the production. It is a list containing the value of the
+      first parameter declaration followed by the value of the repetition. The
+      production is equivalent to the following production using an explicit
+      semantic action:</span>
+    <pre>Pair&lt;Node&gt; ParameterList =
+   head:ParamterDeclaration tail:(void:",":Symbol ParameterDeclaration)*
+   { yyValue = new Pair&lt;Node&gt;(head, tail); } ;
+</pre><span>As
+      illustrated by this version,&nbsp;</span><i>Rats!</i><span>&nbsp;recognizes when the last
+      component expression in a list-valued production already has a list value
+      and turns that value into the overall list's tail. If the last component
+      expression does not have a list value, the overall list's tail is the
+      empty list.</span>
+    <p>Whether
+      to (1) use the&nbsp;<code>flatten</code>&nbsp;attribute so that list
+      elements are added as individual children to generic nodes or (2) use
+      list-valued productions to create lists and preserve them as generic
+      nodes' children is a trade-off. With the&nbsp;<code>flatten</code>&nbsp;attribute, ASTs are more
+      uniform, typically consisting of only generic nodes and strings. In
+      contrast, without the&nbsp;<code>flatten</code>&nbsp;attribute, generic nodes may
+      also contain lists of, say, nodes or strings. However, flattening lists
+      may result in the loss of information. For example, consider this
+      production for Java compilation units:</p>
+    <pre>public generic CompilationUnit =
+  Spacing
+  PackageDeclaration? ImportDeclaration* Declaration*
+  EndOfFile ;
+</pre><span>When
+      lists are flattened, there is no way to distinguish import declarations
+      from regular declarations&nbsp;</span><em>without</em><span>&nbsp;looking at the actual
+      children. In contrast, when lists are not flattened, the generic node for
+      compilation units has exactly three children, corresponding to package,
+      import, and regular declarations respectively. Additionally, the
+      preservation of lists in generic nodes enables more exact typing of ASTs
+      through&nbsp;</span><i>Rats!</i><span>'&nbsp;</span><code>-ast</code><span>&nbsp;option. Consequently, the
+      recommended practice is&nbsp;</span><em>not</em><span>&nbsp;to use the&nbsp;</span><code>flatten</code><span>&nbsp;attribute.</span><span></span><a
+
+       name="left-recursion"></a>
+    <h4>Left-Recursive
+      Productions</h4>
+    <p>To
+      simplify the specification of productions that recognize expressions at
+      different precedence levels, void, text-only, and generic productions may
+      contain&nbsp;<i>direct</i>&nbsp;left-recursions; though
+      arbitrary left-recursions are illegal in&nbsp;<i>Rats!</i>&nbsp;grammars just as for PEGs.
+      Directly left-recursive productions are automatically transformed into
+      equivalent right-iterative productions, while preserving the
+      left-recursive structure of the original production's semantic value. As
+      an example, consider the following generic production for recognizing
+      logical and expressions in C:</p>
+    <pre>generic LogicalAndExpression =
+     LogicalAndExpression void:"&amp;&amp;":Symbol BitwiseOrExpression
+   / BitwiseOrExpression
+   ;
+</pre><span>This
+      directly left-recursive production is equivalent to the following two
+      productions, which leverage so-called actions (i.e., promises) to create
+      the semantic values:</span>
+    <pre>Node LogicalAndExpression =
+   seed:BitwiseOrExpression actions:LogicalAndExpressionTail*
+      { yyValue = apply(actions, seed); }
+   ;
+
+constant Action&lt;Node&gt; LogicalAndExpressionTail =
+   "&amp;&amp;":Symbol right:BitwiseOrExpression
+      {
+         yyValue = new Action&lt;Node&gt;() {
+            public Node run(Node left) {
+               Node result = GNode.create("LogicalAndExpression", left, right);
+               result.setLocation(location(yyStart));
+               return result;
+            }};
+      }
+   ;
+</pre><span>The&nbsp;</span><code>LogicalAndExpressionTail*</code><span>&nbsp;expression creates a list of
+      {@link xtc.util.Action actions}, with each action on the list creating a
+      generic node that is annotated with the source location corresponding to
+      the start of the production. (The&nbsp;</span><code>constant</code><span>&nbsp;attribute ensures that the
+      Java binding for&nbsp;</span><code>right</code><span>&nbsp;is declared&nbsp;</span><code>final</code><span>;
+      this is necessary because&nbsp;</span><code>right</code><span>&nbsp;is referenced in an
+      anonymous inner class.) The</span><code>LogicalAndExpression</code><span>&nbsp;production uses {@link
+      xtc.parser.ParserBase#apply(Pair,Object)} to apply each action in the list
+      onto the result of the previous action, starting with the&nbsp;</span><code>seed</code><span>&nbsp;value for the first action.
+      If the list is empty, the seed value is simply passed through, which is
+      the desired behavior. By using actions and thus delaying the creation of
+      generic nodes, the rewritten productions ensure that the resulting
+      abstract syntax tree preserves left-associativity. Note that actions can
+      also be used outside of generic productions to create left-associative
+      abstract syntax trees.</span>
+    <p>In
+      the previous example, the use of a list of actions results in the correct
+      treatment of the base case: no new generic node is created, rather the
+      semantic value of the bitwise or expression is simply passed through. When
+      specifying productions that do not use actions, grammar writers can
+      achieve similar results by explicitly binding&nbsp;<code>yyValue</code>.
+      For alternatives in a generic production that assign<code>yyValue</code>&nbsp;either through a binding or
+      a semantic action,&nbsp;<i>Rats!</i>&nbsp;does not create a new
+      generic node but rather uses the explicitly specified semantic value.<a  name="node-markers"></a></p>
+    <h4>Node
+      Markers in Generic Productions</h4>
+    <p>Also
+      in the previous example, there is only one recursive alternative;
+      consequently, the production's name, i.e., "<code>LogicalAndExpression</code>",
+      provides a meaningful name for the newly created generic node. However,
+      languages such as C contain more than one left-recursive operator at the
+      same precedence level. Using the features described so far, grammar
+      developers can either write one directly left-recursive generic production
+      for all operators, thus using the same name for all operators' generic
+      nodes, or they can write several right-iterative productions that create
+      the generic nodes through explicit semantic actions. Neither option is
+      particularly attractive and node markers provide a more elegant solution.
+      They are written as an at sign '<code>@</code>' immediately followed by an
+      identifier and specify a generic node's name for nodes generated by the
+      sequence they appear in.</p>
+    <p>As
+      an example, consider the following generic production for recognizing
+      postfix expressions in C:</p>
+    <pre>generic PostfixExpression =
+    &lt;Subscript&gt;         PostfixExpression void:"[":Symbol Expression
+                                          void:"]":Symbol
+                                          @SubscriptExpression
+  / &lt;DirectSelection&gt;   PostfixExpression void:".":Symbol Identifier
+                                          @DirectComponentSelection
+  / &lt;IndirectSelection&gt; PostfixExpression void:"-&gt;":Symbol Identifier
+                                          @IndirectComponentSelection
+  / &lt;FunctionCall&gt;      PostfixExpression void:"(":Symbol ExpressionList?
+                                          void:")":Symbol
+                                          @FunctionCall
+  / &lt;Increment&gt;         PostfixExpression void:"++":Symbol
+                                          @PostincrementExpression
+  / &lt;Decrement&gt;         PostfixExpression void:"--":Symbol
+                                          @PostdecrementExpression
+  / &lt;Compound&gt;          CompoundLiteral
+  / &lt;Primary&gt;           PrimaryExpression
+  ;
+</pre><span>In
+      a single directly left-recursive production, the example specifies all of
+      C's postfix expressions. Yet, each recursive alternative contains a
+      distinct node marker, thus resulting in a differently named generic node.
+      Internally (and as described above),&nbsp;</span><i>Rats!</i><span>&nbsp;converts the directly
+      left-recursive production into the corresponding right-iterative version,
+      which uses actions to create left-recursive AST nodes. Note that the last
+      two alternatives do not require node markers (nor bindings to&nbsp;</span><code>yyValue</code><span>)
+      because they provide the base cases for the recursion.</span><span></span><a
+
+       name="parameters"></a>
+    <h4>Modules,
+      Name Spaces, and Parameters</h4>
+    <span>The
+      intent behind&nbsp;</span><i>Rats!</i><span>'
+      module system is to facilitate the re-use and extensibility of grammar
+      specifications. Even without parameters and modifications, basic modules
+      help, as they allow a grammar writer to break up a grammar into several
+      units. All modules exist in the same global name space. Without parameters
+      and modifications, this name space consists simply of the module names as
+      specified by the corresponding&nbsp;</span><code>module</code><span>&nbsp;declarations. With
+      parameters and modifications, this name space consists of the module names
+      of all&nbsp;</span><em>instantiated</em><span>&nbsp;modules (with instantiation
+      being the process of providing arguments to parameterized modules).</span>
+    <p>In
+      contrast to module names, nonterminals are only meaningful in relation to
+      a specific module. Without any&nbsp;<code>import</code>&nbsp;or&nbsp;<code>modify</code>&nbsp;declarations, a module can
+      only reference the nonterminals defined in that module. In the presence of&nbsp;<code>import</code>&nbsp;or&nbsp;<code>modify</code>&nbsp;declarations,
+      a module can also reference the public and protected nonterminals defined
+      by imported modules and all nonterminals defined by modified modules.</p>
+    <p>Nonterminals
+      may be ambiguous, e.g., the same nonterminal may be defined within a
+      module and an imported module or in several imported modules.&nbsp;<i>Rats!</i>&nbsp;gives precedence to
+      nonterminals defined in the same module as the nonterminal reference. For
+      example, if module&nbsp;<code>Foo</code>&nbsp;defines nonterminal&nbsp;<code>Name</code>&nbsp;and imports module&nbsp;<code>Bar</code>,
+      which also defines nonterminal&nbsp;<code>Name</code>,
+      then a reference to&nbsp;<code>Name</code>&nbsp;appearing in one of&nbsp;<code>Foo</code>'s
+      productions is interpreted to mean&nbsp;<code>Foo</code>'s&nbsp;<code>Name</code>.&nbsp;<code>Bar</code>'s&nbsp;<code>Name</code>&nbsp;can
+      still be referenced by using the qualified notation&nbsp;<code>Bar.Name</code>.
+      Furthermore, if module&nbsp;<code>Foo</code>&nbsp;does not define&nbsp;<code>Name</code>&nbsp;but imports&nbsp;<code>Bar</code>and&nbsp;<code>Baz</code>, which both
+      define&nbsp;<code>Name</code>,
+      any reference to&nbsp;<code>Name</code>&nbsp;in&nbsp;<code>Foo</code>&nbsp;must be qualified, writing&nbsp;<code>Bar.Name</code>&nbsp;and&nbsp;<code>Baz.Name</code>&nbsp;respectively.
+      Note that, while qualified nonterminals are globally unique and thus
+      always unambiguous, a nonterminal, whether qualified or not, can only be
+      used if the corresponding production's module is the same module, imported
+      by the referencing module, or modified by the referencing module.</p>
+    <p>Parameterized
+      modules improve re-use when compared to basic modules, as the same
+      parameterized module can be used with different actual dependencies. For
+      example, module&nbsp;<code>xtc.util.Symbol</code>takes
+      one parameter for a module defining spacing:</p>
+    <pre>module xtc.util.Symbol(Spacing);
+
+import Spacing;
+
+String Symbol = SymbolCharacters Spacing ;
+
+transient String SymbolCharacters = <i>..elided..</i> ;
+</pre><span>As
+      a result, this module can be instantiated with different forms of spacing,
+      without changing&nbsp;</span><code>xtc.util.Symbol</code><span>.
+      At the same time, an instantiation must provide a module that specifies a
+      void nonterminal</span><code>Spacing</code><span>&nbsp;for the resulting module to
+      be meaningful.</span>
+    <p>A
+      parameterized module is instantiated by specifying the corresponding
+      arguments in the corresponding&nbsp;<code>import</code>&nbsp;declaration:</p>
+    <pre>import xtc.util.Symbol(xtc.util.Spacing);
+</pre><span>This&nbsp;</span><code>import</code><span>&nbsp;declaration without a target
+      name is equivalent to the following declaration with a target name:</span>
+    <pre>import xtc.util.Symbol(xtc.util.Spacing) as xtc.util.Symbol;
+</pre><span>In
+      either case, all occurrences of the parameter module name&nbsp;</span><code>Spacing</code><span>&nbsp;are replaced by the
+      specified argument module name&nbsp;</span><code>xtc.util.Spacing</code><span>.
+      Furthermore, all occurrences of the module name itself are replaced by the
+      specified target name (which, in this example, is the same as the module
+      name). Finally, the instantiated module becomes the sole module of that
+      name in the global module name space. No other instantiation with the same
+      target name is possible, unless it instantiates exactly the same module
+      with the same arguments.</span>
+    <p>Note
+      that the nonterminal&nbsp;<code>Spacing</code>&nbsp;in the production for&nbsp;<code>Symbol</code>&nbsp;is not renamed during
+      instantiation, as it denotes a nonterminal and not a module. However, if
+      the nonterminal was written as<code>Spacing.Spacing</code>, it would be
+      renamed to&nbsp;<code>xtc.util.Spacing.Spacing</code>.
+      Further note that&nbsp;<code>xtc.util.Symbol</code>&nbsp;could be instantiated with a
+      different argument within the same grammar, as long as that
+      instantiation's target name is different. Finally, note that once
+      instantiated, other modules can reference the instantiated module through
+      its target name. For example, after module&nbsp;<code>xtc.util.Symbol</code>&nbsp;has been instantiated
+      through either of the above&nbsp;<code>import</code>&nbsp;declarations, it can also be
+      imported as following:</p>
+    <pre>import xtc.util.Symbol;
+</pre><span>This
+      import declaration, when appearing in a dependent module, references the
+      same instantiated module.</span>
+    <p>While
+      module parameters and arguments can only be module names and never more
+      complex expressions, sometimes more complex arguments are desirable. For
+      example, a grammar writer may want to instantiate&nbsp;<code>xtc.util.Symbol</code>&nbsp;with a more complex module&nbsp;<code>my.Spacing</code>,
+      which requires its own argument&nbsp;<code>my.Argument</code>.
+      In this case, the grammar writer can use an&nbsp;<code>instantiate</code>&nbsp;declaration, which
+      instantiates a module but does not make its nonterminals accessible from
+      within the instantiating module. In the example, the grammar writer would
+      use the following declarations:</p>
+    <pre>instantiate my.Spacing(my.Argument) as Spacing;
+import xtc.util.Symbol(Spacing);
+</pre>
+    <p>Module
+      dependencies are resolved through a breadth-first search starting with the
+      top-level module. In other words, a dependent module's dependencies are
+      only processed&nbsp;<em>after</em>&nbsp;all the dependencies of the
+      depending module have been resolved. As a result, the order of&nbsp;<code>import</code>,&nbsp;<code>instantiate</code>,
+      and&nbsp;<code>modify</code>&nbsp;declarations in a module
+      does not matter and mutually dependent modules can be instantiated within
+      the same module. For example,&nbsp;<code>xtc.lang.CSpacing</code>&nbsp;has a parameter for a
+      constant module and&nbsp;<code>xtc.lang.CConstant</code>&nbsp;has a parameter for a
+      spacing module, with each module importing the parameterized module. To
+      instantiate these two mutually dependent modules, module&nbsp;<code>xtc.lang.C</code>&nbsp;simply declares (with some
+      intermediate declarations omitted and ignoring the additional<code>xtc.lang.CState</code>&nbsp;argument):</p>
+    <pre>instantiate xtc.lang.CConstant(xtc.lang.CSpacing);
+instantiate xtc.lang.CSpacing(xtc.lang.CState, xtc.lang.CConstant);
+</pre><span>Because
+      it uses breadth-first search,&nbsp;</span><i>Rats!</i><span>&nbsp;processes these two&nbsp;</span><code>instantiate</code><span>&nbsp;declarations before
+      processing the corresponding&nbsp;</span><code>import</code><span>&nbsp;declarations in&nbsp;</span><code>xtc.lang.CConstant</code><span>&nbsp;and&nbsp;</span><code>xtc.lang.CSpacing</code><span>.
+      By the time&nbsp;</span><i>Rats</i><span>&nbsp;reaches the&nbsp;</span><code>import</code><span>&nbsp;declarations in the
+      dependent modules, the modules have been instantiated and no arguments are
+      necessary.</span><span></span><a
+
+       name="modifications"></a>
+    <h4>Module
+      Modifications</h4>
+    <span>To
+      further facilitate re-use and extensibility,&nbsp;</span><i>Rats!</i><span>&nbsp;supports module
+      modifications, which concisely express extensions to a grammar and, in
+      addition to full productions, can also contain&nbsp;</span><em>alternative
+      additions</em><span>,
+      which add new alternatives to a production's top-level choice,&nbsp;</span><em>alternative
+      removals</em><span>,
+      which remove alternatives from a production's top-level choice, and&nbsp;</span><em>production
+      overrides</em><span>,
+      which can override an entire production, specific alternatives, or a
+      production's attributes. All three types of partial production, whose
+      syntax is specified&nbsp;</span><a
+
+       href="#syntax">above</a><span>&nbsp;and illustrated below,
+      depend on the different alternatives in a production's top-level choice
+      having sequence names. Consequently, it is good practice to always name
+      your sequences!</span>
+    <p>A
+      module modification must contain a single&nbsp;<code>modify</code>&nbsp;declaration, which specifies
+      the module to be modified. For example, the following declaration
+      specifies that module&nbsp;<code>xtc.lang.JavaSymbol</code>&nbsp;modifies module&nbsp;<code>Symbol</code>:</p>
+    <pre>module xtc.lang.JavaSymbol(Symbol);
+
+modify Symbol;
+</pre><span>The
+      example uses a module parameter to ensure that module&nbsp;</span><code>xtc.lang.JavaSymbol</code><span>&nbsp;can be applied to different
+      versions of&nbsp;</span><code>Symbol</code><span>.
+      The resulting module contains all full productions appearing in both the
+      modifying and modified modules (in the example,&nbsp;</span><code>xtc.lang.JavaSymbol</code><span>&nbsp;and&nbsp;</span><code>Symbol</code><span>,
+      respectively). Furthermore, all productions in the resulting module are
+      modified as specified by the alternative additions, alternative removals,
+      and production overrides in the modifying module. Modifications are
+      applied in the same order as they appear in the modifying module (in the
+      example,</span><code>xtc.lang.JavaSymbol</code><span>).
+      The resulting productions are the only versions; i.e., all nonterminals,
+      whether they originally appear in the modifying module or the modified
+      module reference the modified productions.</span>
+    <p>The
+      resulting module's options are the options of the modifying module, with
+      exception of any&nbsp;<a  href="#stateful"><code>stateful</code></a>,&nbsp;<a  href="#set"><code>setOfString</code></a>,
+      and&nbsp;<a  href="#flag"><code>flag</code></a>&nbsp;options, which are preserved
+      if they appear in the modified module's options. Furthermore, the
+      modifying module's header, body, and footer actions are combined with the
+      modified module's actions (if they exist).</p>
+    <p>An
+      alternative addition adds an expression before or after an existing
+      sequence. For example, the following addition adds sequence&nbsp;<code><i>s</i></code>&nbsp;after sequence&nbsp;<code>&lt;Bar&gt;</code>&nbsp;in production&nbsp;<code>Foo</code>:</p>
+    <pre>Type Foo += &lt;Bar&gt; ... / &lt;NewSequence&gt; <i>s</i> ;
+</pre><span>Similarly,
+      the following addition adds the new sequence before sequence&nbsp;</span><code>&lt;Bar&gt;</code><span>:</span>
+    <pre>Type Foo += &lt;NewSequence&gt; <i>s</i> / &lt;Bar&gt; ... ;
+</pre><span>Note
+      that the new expression may actually consist of several sequences and not
+      only one as suggested by the examples. Further note that the type and
+      nonterminal must both be specified and match an existing full production.</span>
+    <p>An
+      alternative removal removes one or more sequences from a production. For
+      example, the following removal eliminates sequences&nbsp;<code>&lt;Bar&gt;</code>&nbsp;and&nbsp;<code>&lt;Baz&gt;</code>&nbsp;from production&nbsp;<code>Foo</code>:</p>
+    <pre>Type Foo -= &lt;Bar&gt;, &lt;Baz&gt; ;
+</pre><span>As
+      before, the type and nonterminal must both be specified and match an
+      existing full production.</span>
+    <p>A
+      production override can replace all alternatives, only specific
+      alternatives, or a production's attributes. For example, the following
+      override replaces all alternatives of production&nbsp;<code>Foo</code>&nbsp;with expression<code><i>e</i></code>:</p>
+    <pre>Type Foo := <i>e</i> ;
+</pre><span>In
+      contrast, this override only replaces alternatives&nbsp;</span><code>&lt;Bar&gt;</code><span>&nbsp;and&nbsp;</span><code>&lt;Baz&lt;</code><span>:</span>
+    <pre>Type Foo := ... / &lt;Bar&gt; <i>s1</i> / &lt;Baz&gt; <i>s2</i> ;
+</pre><span>Finally,
+      this override replaces&nbsp;</span><code>Foo</code><span>'s
+      attributes with the&nbsp;</span><code>public</code><span>&nbsp;attribute:</span>
+    <pre>public Type Foo := ... ;
+</pre><span>Note
+      that the list of attributes may be empty, thus removing all attributes
+      from the full production.</span><span></span><a
+
+       name="transient"></a>
+    <h4>Memoization
+      and Transient Productions</h4>
+    <span>Packrat
+      parsers process their input in time linear to the size of the input, even
+      if they need to backtrack. The reason they can do this is that they store,
+      or&nbsp;</span><i>memoize</i><span>,
+      the result of trying each nonterminal at every input position – hence the
+      name "packrat" parser.</span>
+    <p>The
+      benefits of memoization are best illustrated with a production from&nbsp;<i>Rats!</i>'
+      own grammar:</p>
+    <pre>Element Suffix =
+   ( p:Primary "?":Symbol { yyValue = new Option(p);            }
+   / p:Primary "*":Symbol { yyValue = new Repetition(false, p); }
+   / p:Primary "+":Symbol { yyValue = new Repetition(true,  p); }
+   / Primary
+   )
+   ;
+</pre><span>The&nbsp;</span><code>Suffix</code><span>&nbsp;production matches possible
+      suffix expressions in the input, with each of the four alternatives in the
+      choice first trying to parse a primary expression. Assume that the current
+      input contains a primary expression&nbsp;</span><i>without</i><span>&nbsp;a suffix (i.e., the fourth
+      alternative is the alternative that will succeed). If the parser did&nbsp;</span><i>not</i><span>&nbsp;memoize its results, the
+      primary expression would be parsed&nbsp;</span><i>four</i><span>&nbsp;times, once for each
+      alternative, resulting in suboptimal performance. However, because parsers
+      generated by&nbsp;</span><i>Rats!</i><span>&nbsp;memoize their results, the
+      primary expression is parsed exactly once. Each subsequent alternative
+      simply looks up the result of the first parse.</span>
+    <p>Note
+      that it is possible to rewrite the production for&nbsp;<code>Suffix</code>&nbsp;to not require backtracking.
+      An alternative expression, without semantic actions, might look like this:</p>
+    <pre>   Primary ( Question / Star / Plus / /* Empty */ )
+</pre><span>Further
+      note that other top-down parsers, such as JavaCC and ANTLR, may not
+      require backtracking, even with a comparable production to the one used in&nbsp;</span><i>Rats!</i><span>'
+      own grammar as they support (limited) lookahead. However, the original
+      form clearly and concisely expresses the intent behind this production
+      and, because parsers generated by&nbsp;</span><i>Rats!</i><span>&nbsp;memoize their results, does
+      not require any fiddling with lookahead (as would be necessary for other
+      top-down parsers).</span>
+    <p>In
+      theory, packrat parsers create a two-dimensional array, with characters in
+      the input stream along the x-axis and nonterminals along the y-axis. In
+      practice, not all values in this array are calculated (many of them
+      represent mismatched nonterminals anyway) and the array is sparse. To
+      avoid allocating memory for the entire array, parsers generated by&nbsp;<i>Rats!</i>&nbsp;break each column into
+      several chunks. Memory for the different chunks is allocated independently
+      and on demand (i.e., if a parsing result needs to be stored). Furthermore,
+      for productions that are only referenced once in the entire grammar the
+      corresponding row is never allocated.</p>
+    <p>Grammar
+      writers have further control over memory allocation by declaring
+      productions to be&nbsp;<code>transient</code>:
+      if a production is transient, the corresponding row is not allocated
+      either. The transient keyword can thus reduce a parser's memory footprint
+      and also improve its performance. However, it is also&nbsp;<i>dangerous</i>&nbsp;because, if overused, the
+      resulting parser may need to reparse the same input for the same
+      nonterminal several times and thus perform in time superlinear to the size
+      of the input.</p>
+    <p>So,
+      which productions should be declared transient? In other parsers, the
+      parser processes&nbsp;<i>tokens</i>&nbsp;generated by a separate
+      lexer instead of accessing the character stream directly. Packrat parser
+      grammars thus need to include productions that build up tokens. Examples
+      include the&nbsp;<code>Escape</code>,&nbsp;<code>HexNumber</code>, and&nbsp;<code>HexDigit</code>&nbsp;productions
+      in&nbsp;<i>Rats!</i>' own
+      grammar (shown&nbsp;<a  href="#transient-example">above</a>).
+      Such productions can be declared transient, as the parser typically does
+      not backtrack at the level of individual characters. Furthermore,
+      productions that cover ignored input characters, notably all productions
+      that cover white space and comments, can be declared transient as well.
+      However, when in doubt, it is best to&nbsp;<i>not</i>&nbsp;declare a production as
+      transient, or to perform performance studies on several inputs to see how
+      such declarations impact the parser's memory footprint and performance.<a
+
+         name="attributes"></a></p>
+    <h4>Grammar
+      and Production Attributes</h4>
+    <i>Rats!</i><span>&nbsp;supports a number of
+      options, which are either specified as a grammar-wide option in the
+      top-level module's introduction or as per-production attributes:</span>
+    <ul>
+      <li><a  name="public-attribute"></a><code>public</code>,&nbsp;<code>protected</code>,
+        and&nbsp;<code>private</code>&nbsp;instruct&nbsp;<i>Rats!</i>&nbsp;to make a production a
+        top-level production, referenceable from other modules, and
+        referenceable only from the same module, respectively. These attributes
+        do not have values. Furthermore, these attributes can only be specified
+        as per-production attributes. The default is&nbsp;<code>protected</code>&nbsp;and can be omitted from
+        productions.</li>
+      <li><code>transient</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;not
+        to memoize the corresponding production. The attribute does not have a
+        value and can only be specified as a per-production attribute.</li>
+      <li><code>memoized</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        always memoize the corresponding production. The attribute does not have
+        a value and can only be specified as a per-production attribute.</li>
+      <li><code>inline</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;not
+        to memoize the corresponding production. For productions that are
+        neither void nor text-only, it also instructs&nbsp;<i>Rats!</i>&nbsp;to inline the production
+        if the corresponding nonterminal appears as the only element in an
+        ordered choice's alternative. The attribute does not have a value and
+        can only be specified as a per-production attribute.</li>
+      <li><code>noinline</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;not
+        to inline the production, even if it is (recognized as) transient. The
+        attribute does not have a value and can only be specified as a
+        per-production attribute.</li>
+      <li><code>constant</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        make all bindings constant and thus unmodifiable. The attribute does not
+        have a value. This attribute can be specified either as a grammar-wide
+        attribute or as a per-production attribute.</li>
+      <li><code>withLocation</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        annotate all semantic values that are instances of {@link xtc.tree.Node}
+        with their locations in the source file. The attribute does not have a
+        value. This attribute can be specified either as a grammar-wide
+        attribute or as a per-production attribute.</li>
+      <li><a  name="stateful-attribute"></a><code>stateful</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        include code for managing global parsing state through a {@link
+        xtc.util.State state object}. This attribute is used both as a
+        grammar-wide attribute and a per-production attribute. The grammar-wide
+        attribute value specifies the class managing the global state (which
+        must have a no-argument constructor).&nbsp;<i>Rats!</i>&nbsp;includes a static final
+        field&nbsp;<code>yyState</code>,
+        which references an instance of that class, in the generated parser. For
+        a production with this attribute, the attribute does not have a value
+        and&nbsp;<i>Rats!</i>&nbsp;includes
+        the appropriate calls to {@link xtc.util.State#start()}, {@link
+        xtc.util.State#commit()}, and {@link xtc.util.State#abort()}. Note that
+        the state object must be reset explicitly with the per-production&nbsp;<code>resetting</code>&nbsp;attribute. Further note
+        that, if a grammar spans several modules, all the module's stateful
+        options must specify the same class name.</li>
+      <li><code>resetting</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        include code to {@link xtc.util.State#reset(String) reset} the global
+        state object. The attribut does not have a value. This attribute can
+        only be specified as a per-production attribute and requires a
+        grammar-wide&nbsp;<code>stateful</code>&nbsp;attribute.</li>
+      <li><code>ignoringCase</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        perform comparisons for string matches in a case-insensitive manner. The
+        attribute does not have a value. This attribute can be specified either
+        as a grammar-wide attribute or as a per-production attribute.</li>
+      <li><code>flatten</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        add the elements of list values (i.e., instances of {@link
+        xtc.util.Pair}) to generic nodes instead of adding the list values
+        themselves. This attribute does not have a value and can only be
+        specified as a grammar-wide attribute.</li>
+      <li><code>variant</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;that
+        all generic nodes returned by the production as a semantic value are
+        variants of the same type. This attribute does not have a value and can
+        only be specified as a per-production attribute.</li>
+      <li><code>withParseTree</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        generate a parse tree instead of an abstract syntax tree. This attribute
+        is specified as a grammar-wide attribute and does not have a value. For
+        a grammar with this attribute,&nbsp;<i>Rats!</i>&nbsp;rewrites all generic,
+        text-only, and void productions as well as productions that pass the
+        semantic value through to preserve the input in the form of {@link
+        xtc.tree.Formatting} annotations. The embedded AST generally has the
+        same structure as for the grammr without the attribute. The exception
+        are strings, which are represented as instances of {@link
+        xtc.tree.Token}. Furthermore, generic nodes include additional children
+        consisting of&nbsp;<code>Formatting</code>&nbsp;annotating&nbsp;<code>null</code>&nbsp;values if voided
+        expressions or void nonterminals appear between two non-void
+        repetitions.</li>
+      <li><code>verbose</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        print debugging information to the console for each parser method
+        invocation. The attribute does not have a value. This attribute can be
+        specified either as a grammar-wide attribute or as a per-production
+        attribute.</li>
+      <li><code>nowarn</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        suppress warnings during parser generation. The attribute does not have
+        a value; it can be specified either as a grammar-wide attribute or as a
+        per-production attribute.</li>
+      <li><a  name="parser-attribute"></a><code>parser</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        use the fully qualified class name specified by the attribute's value as
+        the Java class name for the generated parser, instead of deducing that
+        name from the module's name. This attribute can only be specified as a
+        grammar-wide attribute.</li>
+      <li><code>factory</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        use the (optionally qualified) class name specified by the attribute's
+        value as the factory for creating generic nodes instead of using&nbsp;<code>xtc.tree.GNode</code>.
+        This attribute can only be specified as a grammar-wide attribute.</li>
+      <li><code>visibility</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        make the generated parser class either public or package private,
+        depending on the attribute's value (<code>public</code>&nbsp;or&nbsp;<code>packagePrivate</code>).
+        This attribute can only be specified as a grammar-wide attribute. The
+        default for modules without this attribute is public.</li>
+      <li><code>rawTypes</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        use raw types instead of generic types. Besides a "<code>@SuppressWarnings("unchecked")</code>"
+        annotation for the parser class, the generated code is compatible with
+        Java 1.4. The attribute does not have a value and can only be specified
+        as a grammar-wide attribute.</li>
+      <li><code>main</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        include a static main method that parses one or more input files and
+        prints the corresponding results. The value of this attribute must be
+        the name of the top-level nonterminal to parse. This attribute can only
+        be specified as a grammar-wide attribute.</li>
+      <li><code>printer</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        use the visitor specified by the attribute's value for printing the
+        semantic value returned by a successful parse. This attribute can only
+        be specified as a grammar-wide attribute and requires that the grammar
+        also has the&nbsp;<code>main</code>&nbsp;attribute.</li>
+      <li><a  name="set"></a><code>setOfString</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        include a static final set of strings with the attribute's value as its
+        name.&nbsp;<i>Rats!</i>&nbsp;also includes a convience
+        method for filling sets&nbsp;<code>add(Set,T[])</code>.
+        This attribute can only be specified as a grammar-wide attribute.</li>
+      <li><a  name="flag"></a><code>flag</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        include a public static final boolean field with the attribute's value
+        as its name. The field's value is&nbsp;<code>true</code>.
+        This attribute can only be specified as a grammar-wide attribute.</li>
+      <li><code>genericAsVoid</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        treat generic productions as void productions. The attribute does not
+        have a value and can only be specified as a grammar-wide attribute.</li>
+      <li><code>dump</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        include a method for dumping a plain-text representation of the parser's
+        memoization table to a printer:&nbsp;<code>dump({@link
+          xtc.tree.Printer})</code>. The attribute does not have a value and can
+        only be specified as a grammar-wide attribute.</li>
+      <li><code>explicit</code>&nbsp;instructs&nbsp;<i>Rats!</i>&nbsp;to
+        always generate an explicit error for the production instead of reusing
+        parse errors where possible. The attribute does not have a value and can
+        only be specified as a per-production attribute.</li>
+    </ul>
+    <p>A
+      note on licensing: Parsers generated with the&nbsp;<code>main</code>,&nbsp;<code>printer</code>, and&nbsp;<code>dump</code>&nbsp;attributes
+      link with code licensed under the GNU GPL version 2. As a result, parsers
+      generated with these attributes may&nbsp;<em>not</em>&nbsp;be used in software that is
+      not compatible with the GPL version 2. To generate parsers that are not
+      restricted by the GPL, use the&nbsp;<code>-lgpl</code>&nbsp;option when running&nbsp;<em>Rats!</em>.<a
+
+         name="parser-actions"></a></p>
+    <h4>Parser
+      Actions</h4>
+    <span>Some
+      languages cannot be expressed by PEGs or&nbsp;</span><i>Rats!</i><span>&nbsp;grammars. For example, the
+      on-the-wire format for&nbsp;</span><a
+
+       href="http://world.std.com/%7Ecme/html/spki.html">SPKI/SDSI</a><span>&nbsp;represents byte strings as
+      one or more digits, followed by a colon, followed by the number of
+      characters specified by the sequence of digits (when interpreted as a
+      decimal integer); but parsing a specific number of characters cannot be
+      expressed by PEGs. Parser actions allow grammar writers to still use&nbsp;</span><i>Rats!</i><span>&nbsp;for such languages by
+      providing a low-level extensibility mechanism.</span>
+    <p>Parser
+      actions work as follows. Before executing the code in a parser action, the
+      variable&nbsp;<code>yyBase</code>&nbsp;is assigned the index of the
+      current parser position. The parser action can then use this index
+      together with the parser's methods to further consume the input, parsing
+      the expression not expressible by PEGs. When finished, it assigns the
+      corresponding result to&nbsp;<code>yyResult</code>,
+      which must either be a {@link xtc.parser.SemanticValue} object indicating
+      a successful parse or a {@link xtc.parser.ParseError} object indicating a
+      parse error. In the case of a semantic value object, that object's
+      semantic value becomes the semantic value of the production, unless
+      another action after the parser action changes it.</p>
+    <p>The
+      following grammar illustrates the use of a parser action for parsing byte
+      strings as used by SPKI/SDSI. Note that the&nbsp;<code>yyStart</code>&nbsp;reference in the parser
+      action is the parser position at the beginning of the production and is
+      used for indicating the position of an error.</p>
+    <pre>module ByteString;
+
+body {
+  Result parseChars(String number, int start, int base) throws IOException {
+    int n;
+
+    try {
+      n = Integer.parseInt(number);
+    } catch (NumberFormatException x) {
+      return new ParseError("Malformed length", start);
+    }
+    
+    StringBuilder buf = new StringBuilder(n);
+    for (int i=0; i&lt;n; i++) {
+      int c = character(base + i);
+
+      if (c != -1) {
+        buf.append((char)c);
+      } else {
+        return new ParseError("Unexpected end of bytestring", base + i);
+      }
+    }
+
+    return new SemanticValue(buf.toString(), base + n);
+  }
+}
+
+option main(ByteString);
+
+public String ByteString =
+  n:Integer ':' ^{ yyResult = parseChars(n, yyStart, yyBase); } ;
+
+String Integer = [0-9]+ ;</pre>
+  </body>
+</html>
