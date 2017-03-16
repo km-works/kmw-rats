@@ -1,7 +1,2 @@
-lib/
-dist/
-build/
-classes/
-nbproject/private/
-*.class
-*.jar
+target/
+nbproject/
