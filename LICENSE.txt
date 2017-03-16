@@ -1,9 +1,9 @@
 GPL2 License for the original Rats! software
 ============================================
-as part of xtc - The eXTensible Compiler v2.3.1
+as part of xtc - The eXTensible Compiler v2.4.0
 
 xtc - The eXTensible Compiler  
-Copyright (C) 2004-2012 Robert Grimm
+Copyright (C) 2004-2014 Robert Grimm
 
 This program is free software; you can redistribute it and/or  
 modify it under the terms of the GNU General Public License  
