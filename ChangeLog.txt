@@ -20,3 +20,9 @@ CR003 Make top-level parsing methods "public final" instead of just "public"
       
 CR004 Remove timestamp from from header comment of generated parser class because it forces a 
       useless new scc version on every generation run absent substancial changes.
+
+Mavenize project.
+
+Split original codebase into generator and runtime modules.
+
+Correct javadoc errors.
