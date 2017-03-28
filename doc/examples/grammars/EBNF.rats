@@ -17,7 +17,7 @@
  *   with this distribution. If not, see <http://km-works.eu/res/GPL.txt> or
  *   <http://www.gnu.org/licenses/gpl-3.0.html>.
  */
-module PEG;
+module EBNF_W3C;
 
 import base.Spacing;    // w EOI Newline etc
 import base.Strings;    // EscapedStringLiteral CodePointRange etc
@@ -27,14 +27,12 @@ import kmworks.dsltools.parser.base.*;
 import kmworks.dsltools.adt.ml.*;
 }
 
-option parser(kmworks.dsltools.parser.ml.PEG_Parser);
+option parser(kmworks.dsltools.parser.ml.EBNF_W3C_Parser);
 
 /*
-  Grammar PEG
-  -----------
-  Based on Bryan Ford: "Parsing Expression Grammars: A Recognition-Based Syntactic Foundation"
-  Massachusetts Institute of Technology, 2004-01
+
 */
+
 
 /*   
  *  Grammar :: Production+
@@ -48,41 +46,36 @@ public Grammar Start
  *  Production :: Name Choice+
  */
 Production Production
-  = n:Name DEFINES f:Choice r:(CONTINUE Choice)*
+  = n:Name w DEFINES f:Choice r:(CONTINUE Choice)* PROD_SEP
     { yyValue = NodeFactory.mkProduction(n, f, r.list()); }
 ;
 
-/*   
- *  Choice :: Sequence+
+/*   Choice = Sequence+ | EpsilonChoice
+ *   EpsilonChoice = Sequence+
  */
 Choice Choice
-  = f:Sequence r:(ALT Sequence)*
-    { yyValue = NodeFactory.mkChoice(f, r.list()); }
+  = f:Sequence r:(void:ALT Sequence)* eps:ALT?
+    { yyValue = NodeFactory.mkChoice(f, r.list(), eps!=null); }
 ;
 
 /*   
- *  Sequence :: PredicateOrTerm+
+ *  Sequence :: Term+
  */
 Sequence Sequence
-  = t:PredicateOrTerm+
+  = t:Term+
     { yyValue = NodeFactory.mkSequence(t.list()); }
-;
+  ;
 
 /*   
- *  Term = Primary | ZeroOrOne | ZeroOrMore | OneOrMore | Predicate
+ *  Term = Primary | ZeroOrOne | ZeroOrMore | OneOrMore
  */
-Term PredicateOrTerm 
-  = pfx:[&!]? t:Term
-    { yyValue = (pfx == null ? t : NodeFactory.mkPredicate(pfx, t)); }
-;
-    
 Term Term
   = prim:Primary mult:[?*+]? w
     { yyValue = NodeFactory.mkTerm(prim, mult); }
 ;
 
-/*   
- * Primary = NonTerminal | Terminal | Choice
+/*
+ *  Primary = NonTerminal | Terminal | Choice
  */
 Primary Primary
   = NonTerminal !DEFINES
@@ -104,9 +97,9 @@ NonTerminal NonTerminal
 Terminal Terminal
   = lit:EscapedStringLiteral w
     { yyValue = NodeFactory.mkLiteral(lit); }
-  / <CODEPOINT_SET> LBRACK rng:( CodePointRange )+ RBRACK
+  / LBRACK rng:( CodePointRange )+ RBRACK
     { yyValue = NodeFactory.mkCharClass(rng.list()); }
-  / <ANY_CODEPOINT> dot:DOT
+  / dot:DOT
     { yyValue = NodeFactory.mkAnyChar(dot); }
 ;
 
@@ -114,31 +107,45 @@ Terminal Terminal
  *  Name = String
  */
 String Name
-  = f:NameFirst r:NameRest w
-    { yyValue = f + r; }
-;
-transient String NameFirst
-  = [a-zA-Z_]
-;
+  = n:(NameStart NameRest*)
+  ;
+
+transient String NameStart
+  = [A-Za-z_]
+  / [\u00C0-\u00D6]
+  / [\u00D8-\u00F6]
+  / [\u00F8-\u01BF]
+  / [\u01C4-\u02B8]
+  / [\u037B\u037C\u037D\u0386]
+  / [\u0388-\u03FF]
+  / [\u0400-\u0482]
+  / [\u048A-\u04FF]
+  ;
+
 transient String NameRest
-  = [a-zA-Z0-9_.\-]*
-;
+  = ( NameStart
+    / [0-9]
+    / '-'
+    )+
+  ;
 
 /*
  *  Atomic tokens
  */
-transient void CONTINUE   = '\\' nl w ;
-transient void DEFINES    = "<-" w ;
-transient void ALT        = '/' w ;
+transient void CONTINUE   = ',' w ;
+transient void DEFINES    = '=' w ;
 transient void OPEN       = '(' w ;
 transient void CLOSE      = ')' w ;
 transient void LBRACK     = '['   ;
 transient void RBRACK     = ']' w ;
+transient void PROD_SEP   = ';' w ;
+
+transient String ALT      = "|" w ;
 transient String DOT      = "." w ;
 
 
 /*
-Names must be a conformant XML NCName because of their use in hyperlinks and anchors.
+Name and Id must be an XML conformant NCName because of their use in hyperlinks and anchors.
 (see: http://www.w3.org/TR/REC-xml-names/#NT-NCName)
 
 NameStart     ::= ":" | [A-Z] | "_" | [a-z] | [\uC0-\uD6] | [\uD8-\uF6]
