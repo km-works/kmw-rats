@@ -54,8 +54,8 @@ Literal       <- ('_' / CharLit / StringLit / Class) Spacing
 CharLit       <- ['] (Escape / !['\\] .)  [']
 StringLit     <- ["] (Escape / !["\\] .)* ["]
 Class         <- '[' (Char '-' Char / Char)* ']'
-Char          <- Escape / ![-\]\\] .
-Escape        <- '\\' [btnfr"'\[\\\]-] / '\\' 'u' HexQuad / OctalEscape
+Char          <- Escape / ![\\\-\]] .
+Escape        <- '\\' [btnfr"'\-\[\\\]] / '\\' 'u' HexQuad / OctalEscape
 OctalEscape   <- '\\' ([0-3] OctDigit OctDigit / OctDigit OctDigit / OctDigit)
 
 Integer       <- (HexNumber / OctNumber / Number) Spacing
