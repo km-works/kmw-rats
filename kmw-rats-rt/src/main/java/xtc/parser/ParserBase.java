@@ -338,7 +338,7 @@ public abstract class ParserBase {
    * @return The difference as a string.
    */
   protected final String difference(final int start, final int end) {
-    return (start==end)? "" : new String(yyData, start, end-start);
+    return start==end ? "" : new String(yyData, start, end-start);
   }
 
   /**
