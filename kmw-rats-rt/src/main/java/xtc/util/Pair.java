@@ -579,13 +579,13 @@ public class Pair<T> implements Iterable<T> {
    */
   public Pair<T> add(T element) {
     if (this == EMPTY) {
-      Pair<T> p = new Pair<T>(element);
+      Pair<T> p = new Pair<>(element);
       return p;
     }
 
     Pair<T> last = this;
     while (EMPTY != last.tail) last = last.tail;
-    last.tail    = new Pair<T>(element);
+    last.tail    = new Pair<>(element);
     return last.tail;
   }
 
@@ -643,12 +643,12 @@ public class Pair<T> implements Iterable<T> {
     Pair<T> pair, copy, cursor;
 
     pair   = this;
-    copy   = new Pair<T>(pair.head);
+    copy   = new Pair<>(pair.head);
     cursor = copy;
 
     while (EMPTY != pair.tail) {
       pair        = pair.tail;
-      cursor.tail = new Pair<T>(pair.head);
+      cursor.tail = new Pair<>(pair.head);
       cursor      = cursor.tail;
     }
 
@@ -691,7 +691,7 @@ public class Pair<T> implements Iterable<T> {
 
     while (EMPTY != pair) {
       T head = pair.head;
-      if (list.contains(head)) result = new Pair<T>(head, result);
+      if (list.contains(head)) result = new Pair<>(head, result);
       pair = pair.tail;
     }
 
@@ -712,7 +712,7 @@ public class Pair<T> implements Iterable<T> {
 
     while (EMPTY != pair) {
       T head = pair.head;
-      if (! list.contains(head)) result = new Pair<T>(head, result);
+      if (! list.contains(head)) result = new Pair<>(head, result);
       pair = pair.tail;
     }
 
@@ -742,7 +742,7 @@ public class Pair<T> implements Iterable<T> {
    * @return The list.
    */
   public List<T> list() {
-    ArrayList<T> l = new ArrayList<T>(size());
+    ArrayList<T> l = new ArrayList<>(size());
     addTo(l);
     return l;
   }
