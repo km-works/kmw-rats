@@ -13,11 +13,10 @@
     <packaging>jar</packaging>
     
     <name>KMW Rats Generator</name>
-    
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>aux-rats-rt</artifactId>
+            <artifactId>kmw-rats-rt</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
