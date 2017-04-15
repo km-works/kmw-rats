@@ -361,18 +361,17 @@ public abstract class Visitor {
   }
 
   /**
-   * Map this visitor over the specified list.
+   * DEAD CODE: Map this visitor over the specified list.
    *
    * @param list The list.
    * @return The list of results.
-   */
   public <T> Pair<T> map(Pair<? extends Node> list) {
     if (Pair.EMPTY == list) return Pair.empty();
 
     final @SuppressWarnings("unchecked")
     T v1 = (T)dispatch(list.head());
 
-    Pair<T> result = new Pair<T>(v1);
+    Pair<T> result = new Pair<>(v1);
     Pair<T> cursor = result;
 
     while (Pair.EMPTY != list.tail()) {
@@ -381,20 +380,20 @@ public abstract class Visitor {
       final @SuppressWarnings("unchecked")
       T v2 = (T)dispatch(list.head());
 
-      cursor.setTail(new Pair<T>(v2));
+      cursor.setTail(new Pair<>(v2));
       cursor = cursor.tail();
     }
 
     return result;
   }
+   */
 
   /**
-   * Map this visitor over the specified list while also updating the
+   * DEAD CODE: Map this visitor over the specified list while also updating the
    * list.
    *
    * @param list The list.
    * @return The updated list.
-   */
   public <T extends Node> Pair<T> mapInPlace(Pair<T> list) {
     Pair<T> p = list;
 
@@ -408,5 +407,6 @@ public abstract class Visitor {
 
     return list;
   }
+   */
 
 }

@@ -89,9 +89,8 @@ public class Pair<T> implements Iterable<T> {
     int  hash = 1;
 
     while (EMPTY != pair) {
-      Object head = pair.head;
-
-      hash = 31 * hash + (null == head ? 0 : head.hashCode());
+      final Object hd = pair.head;
+      hash = 31 * hash + (null == hd ? 0 : hd.hashCode());
       pair = pair.tail;
     }
 
@@ -152,13 +151,12 @@ public class Pair<T> implements Iterable<T> {
   }
 
   /**
-   * Set the head.
+   * DEAD CODE: Set the head.
    *
    * @param head The new head.
    * @return The old head.
    * @throws IllegalStateException
    *   Signals that this pair represents the empty list.
-   */
   public T setHead(T head) {
     if (this == EMPTY) {
       throw new IllegalStateException("Empty list");
@@ -168,6 +166,7 @@ public class Pair<T> implements Iterable<T> {
     this.head  = head;
     return old;
   }
+   */
 
   /**
    * Get the tail.
@@ -185,7 +184,7 @@ public class Pair<T> implements Iterable<T> {
   }
 
   /**
-   * Set the tail.
+   * DEAD CODE: Set the tail.
    *
    * @param tail The new tail.
    * @return The old tail.
@@ -193,7 +192,6 @@ public class Pair<T> implements Iterable<T> {
    *   Signals that <code>tail</code> is <code>null</code>.
    * @throws IllegalStateException
    *   Signals that this pair represents the empty list.
-   */
   public Pair<T> setTail(Pair<T> tail) {
     if (null == tail) {
       throw new NullPointerException("Null tail");
@@ -205,6 +203,7 @@ public class Pair<T> implements Iterable<T> {
     this.tail   = tail;
     return old;
   }
+   */
 
   /**
    * Get the element at the specified index of the list starting at
@@ -233,7 +232,7 @@ public class Pair<T> implements Iterable<T> {
   }
 
   /**
-   * Replace the element at the specified index of the list starting
+   * DEAD CODE: Replace the element at the specified index of the list starting
    * at this pair.  Note that this method's performance is linear to
    * the index.
    *
@@ -241,7 +240,6 @@ public class Pair<T> implements Iterable<T> {
    * @param element The new element.
    * @return The old element.
    * @throws IndexOutOfBoundsException Signals an invalid index.
-   */
   public T set(int index, T element) {
     if (0 > index) {
       throw new IndexOutOfBoundsException("Index: "+index+", Size: "+size());
@@ -262,6 +260,7 @@ public class Pair<T> implements Iterable<T> {
 
     throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
   }
+   */
 
   /**
    * Get the size of the list starting at this pair.  Note that this
@@ -295,8 +294,8 @@ public class Pair<T> implements Iterable<T> {
     Pair pair = this;
 
     while (EMPTY != pair) {
-      Object head = pair.head;
-      if (null == o ? null == head : o.equals(head)) return true;
+      final Object hd = pair.head;
+      if (null == o ? null == hd : o.equals(hd)) return true;
       pair = pair.tail;
     }
     
@@ -304,18 +303,18 @@ public class Pair<T> implements Iterable<T> {
   }
 
   /**
-   * Determine whether the list starting at this pair consists of
+   * DEAD CODE: Determine whether the list starting at this pair consists of
    * no elements.
    *
    * @return <code>true</code> if the list starting at this pair
    *   consists of no elements.
-   */
   public boolean consists() {
     return EMPTY == this;
   }
+   */
 
   /**
-   * Determine whether the list starting at this pair consists of the
+   * DEAD CODE: Determine whether the list starting at this pair consists of the
    * specified object.  If the specified object is not
    * <code>null</code>, the implementation invokes
    * <code>equals()</code> on the object.
@@ -323,15 +322,15 @@ public class Pair<T> implements Iterable<T> {
    * @param o The object.
    * @return <code>true</code> if the list starting at this pair
    *   consists of the object.
-   */
   public boolean consists(Object o) {
     return ((EMPTY != this) &&
             (null == o ? null == this.head : o.equals(this.head)) &&
             (EMPTY == this.tail));
   }
+   */
 
   /**
-   * Determine whether the list starting at this pair consists of the
+   * DEAD CODE: Determine whether the list starting at this pair consists of the
    * specified two objects.  If any of the specified objects is not
    * <code>null</code>, the implementation invokes
    * <code>equals()</code> on the object.
@@ -340,7 +339,6 @@ public class Pair<T> implements Iterable<T> {
    * @param o2 The second object.
    * @return <code>true</code> if the list starting at this pair
    *   consists of the two objects.
-   */
   public boolean consists(Object o1, Object o2) {
     Pair pair = this;
 
@@ -357,9 +355,10 @@ public class Pair<T> implements Iterable<T> {
 
     return EMPTY == pair.tail;
   }
+   */
 
   /**
-   * Determine whether the list starting at this pair consists of the
+   * DEAD CODE: Determine whether the list starting at this pair consists of the
    * specified three objects.  If any of the specified objects is not
    * <code>null</code>, the implementation invokes
    * <code>equals()</code> on the object.
@@ -369,7 +368,6 @@ public class Pair<T> implements Iterable<T> {
    * @param o3 The third object.
    * @return <code>true</code> if the list starting at this pair
    *   consists of the three objects.
-   */
   public boolean consists(Object o1, Object o2, Object o3) {
     Pair pair = this;
 
@@ -392,9 +390,10 @@ public class Pair<T> implements Iterable<T> {
 
     return EMPTY == pair.tail;
   }
+   */
 
   /**
-   * Determine whether the list starting at this pair consists of the
+   * DEAD CODE: Determine whether the list starting at this pair consists of the
    * specified four objects.  If any of the specified objects is not
    * <code>null</code>, the implementation invokes
    * <code>equals()</code> on the object.
@@ -405,7 +404,6 @@ public class Pair<T> implements Iterable<T> {
    * @param o4 The fourth object.
    * @return <code>true</code> if the list starting at this pair
    *   consists of the four objects.
-   */
   public boolean consists(Object o1, Object o2, Object o3, Object o4) {
     Pair pair = this;
 
@@ -434,9 +432,10 @@ public class Pair<T> implements Iterable<T> {
 
     return EMPTY == pair.tail;
   }
+   */
 
   /**
-   * Determine whether the list starting at this pair consists of the
+   * DEAD CODE: Determine whether the list starting at this pair consists of the
    * specified five objects.  If any of the specified objects is not
    * <code>null</code>, the implementation invokes
    * <code>equals()</code> on the object.
@@ -448,7 +447,6 @@ public class Pair<T> implements Iterable<T> {
    * @param o5 The fifth object.
    * @return <code>true</code> if the list starting at this pair
    *   consists of the five objects.
-   */
   public boolean consists(Object o1,Object o2,Object o3,Object o4,Object o5) {
     Pair pair = this;
 
@@ -483,9 +481,10 @@ public class Pair<T> implements Iterable<T> {
 
     return EMPTY == pair.tail;
   }
+   */
 
   /**
-   * Determine whether the list starting at this pair consists of the
+   * DEAD CODE: Determine whether the list starting at this pair consists of the
    * specified objects.  If any of the specified objects is not
    * <code>null</code>, the implementation invokes
    * <code>equals()</code> on the object.
@@ -493,7 +492,6 @@ public class Pair<T> implements Iterable<T> {
    * @param os The objects.
    * @return <code>true</code> if the list starting at this pair
    *   consists of the specified objects.
-   */
   public boolean consists(Object... os) {
     Pair pair = this;
     int  size = 0;
@@ -510,6 +508,7 @@ public class Pair<T> implements Iterable<T> {
 
     return (EMPTY == pair) && (os.length == size);
   }
+   */
 
   /**
    * Get an iterator over the values of the list starting at this
@@ -517,6 +516,7 @@ public class Pair<T> implements Iterable<T> {
    *
    * @return The iterator.
    */
+  @Override
   public Iterator<T> iterator() {
     return new Iterator<T>() {
         private Pair<T> pair = Pair.this;
@@ -556,7 +556,7 @@ public class Pair<T> implements Iterable<T> {
     Pair<T> backward = Pair.empty();
 
     while (EMPTY != forward) {
-      Pair<T> temp  = backward;
+      final Pair<T> temp  = backward;
       backward      = forward;
       forward       = forward.tail;
       backward.tail = temp;
@@ -566,7 +566,7 @@ public class Pair<T> implements Iterable<T> {
   }
 
   /**
-   * Add the specified element to the list starting at this pair.  If
+   * DEAD CODE: Add the specified element to the list starting at this pair.  If
    * this list is the empty list, this method simply allocates a new
    * pair.  Otherwise, it modifies this list's last non-empty element.
    * In either case, this method returns the newly created pair to
@@ -576,7 +576,6 @@ public class Pair<T> implements Iterable<T> {
    * @return The newly added pair.
    * @throws IllegalStateException Signals that this pair represent
    *   the empty list.
-   */
   public Pair<T> add(T element) {
     if (this == EMPTY) {
       Pair<T> p = new Pair<>(element);
@@ -588,9 +587,10 @@ public class Pair<T> implements Iterable<T> {
     last.tail    = new Pair<>(element);
     return last.tail;
   }
+   */
 
   /**
-   * Set the tail of this list's last pair to the specified value.
+   * DEAD CODE: Set the tail of this list's last pair to the specified value.
    * Effectively, this method destructively appends the list starting
    * at the specified pair to the list starting at this pair.  Its
    * performance is linear in the size of the list.
@@ -602,7 +602,6 @@ public class Pair<T> implements Iterable<T> {
    *   <code>null</code>.
    * @throws IllegalStateException Signals that this pair represents
    *   the empty list.
-   */
   public void setLastTail(Pair<T> tail) {
     if (null == tail) {
       throw new NullPointerException("Null tail");
@@ -617,9 +616,10 @@ public class Pair<T> implements Iterable<T> {
 
     pair.tail = tail;
   }
+   */
 
   /**
-   * Set the tail of a copy of this list's last pair to the specified
+   * DEAD CODE: Set the tail of a copy of this list's last pair to the specified
    * value.  Effectively, this method non-destructively appends the
    * list starting at the specified pair to the list starting at this
    * pair.  Its performance is linear in the size of the list.
@@ -630,7 +630,6 @@ public class Pair<T> implements Iterable<T> {
    * @return The new head.
    * @throws NullPointerException Signals that <code>tail</code> is
    *   <code>null</code>.
-   */
   public Pair<T> append(Pair<T> tail) {
     if (null == tail) {
       throw new NullPointerException("Null tail");
@@ -655,69 +654,70 @@ public class Pair<T> implements Iterable<T> {
     cursor.tail = tail;
     return copy;
   }
+   */
 
   /**
-   * Combine the elements on the list starting at this pair with the
+   * DEAD CODE: Combine the elements on the list starting at this pair with the
    * elements on the list starting at the specified pair.  Note that
    * this method's performance is quadratic in the size of the lists.
    *
    * @param list The other list.
    * @return The set union.
-   */
   public Pair<T> combine(Pair<T> list) {
     Pair<T> pair   = this;
     Pair<T> result = list;
 
     while (EMPTY != pair) {
-      T head = pair.head;
-      if (! list.contains(head)) result = new Pair<T>(head, result);
+      final T hd = pair.head;
+      if (! list.contains(hd)) result = new Pair<>(hd, result);
       pair = pair.tail;
     }
 
     return result;
   }
+   */
 
   /**
-   * Intersect the elements on the list starting at this pair with the
+   * DEAD CODE: Intersect the elements on the list starting at this pair with the
    * elements on the list starting at the specified pair.  Note that
    * this method's performance is quadratic in the size of the lists.
    *
    * @param list The other list.
    * @return The set intersection.
-   */
   public Pair<T> intersect(Pair<T> list) {
     Pair<T> pair   = this;
     Pair<T> result = Pair.empty();
 
     while (EMPTY != pair) {
-      T head = pair.head;
-      if (list.contains(head)) result = new Pair<>(head, result);
+      final T hd = pair.head;
+      if (list.contains(hd)) result = new Pair<>(hd, result);
       pair = pair.tail;
     }
 
     return result;
   }
+   */
 
   /**
-   * Subtract the elements on the list starting at the specified list
+   * DEAD CODE: Subtract the elements on the list starting at the specified list
    * from the elements on the list starting at this pair.  Note that
    * this method's performance is quadratic in the size of the lists.
    *
    * @param list The list to subtract.
    * @return The set subtraction.
-   */
   public Pair<T> subtract(Pair<T> list) {
     Pair<T> pair   = this;
     Pair<T> result = Pair.empty();
 
     while (EMPTY != pair) {
-      T head = pair.head;
-      if (! list.contains(head)) result = new Pair<>(head, result);
+      final T hd = pair.head;
+      if (! list.contains(hd)) result = new Pair<>(hd, result);
       pair = pair.tail;
     }
 
     return result;
   }
+   */
 
   /**
    * Add the values of the list starting at this pair in order to the
@@ -756,21 +756,21 @@ public class Pair<T> implements Iterable<T> {
    */
   @Override
   public String toString() {
-    Pair          pair = this;
-    StringBuilder buf  = new StringBuilder();
-    buf.append('[');
+    Pair pair = this;
+    final StringBuilder sb  = new StringBuilder();
+    sb.append('[');
 
     while (EMPTY != pair) {
-      Object head = pair.head;
+      final Object hd = pair.head;
       
-      buf.append(null == head ? "null" : head.toString());
+      sb.append(null == hd ? "null" : hd.toString());
 
       pair = pair.tail;
-      if (EMPTY != pair) buf.append(", ");
+      if (EMPTY != pair) sb.append(", ");
     }
 
-    buf.append(']');
-    return buf.toString();
+    sb.append(']');
+    return sb.toString();
   }
 
   /**
