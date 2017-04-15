@@ -19,6 +19,7 @@
 package xtc.parser;
 
 import java.util.List;
+import java.util.Objects;
 
 import xtc.Constants;
 
@@ -105,6 +106,27 @@ public abstract class Production extends Node {
     this.qName      = qName;
     this.choice     = choice;
   }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Production other = (Production) obj;
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.qName, other.qName)) {
+            return false;
+        }
+        return true;
+    }
 
   public int hashCode() {
     return (null == qName)? name.hashCode() : qName.hashCode();

@@ -18,6 +18,7 @@
  */
 package xtc.parser;
 
+import java.util.Objects;
 import xtc.tree.Node;
 
 /**
@@ -39,6 +40,24 @@ public class Name extends Node {
   public Name(String name) {
     this.name = name;
   }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Name other = (Name) obj;
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        return true;
+    }
 
   public int hashCode() {
     return name.hashCode();

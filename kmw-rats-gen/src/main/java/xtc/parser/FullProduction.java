@@ -32,57 +32,80 @@ import xtc.type.Type;
  */
 public class FullProduction extends Production {
 
-  /**
-   * Create a new full production.  Note that the {@link #qName
-   * qualified name} needs to be initialized separately.
-   *
-   * @param attributes The list of attributes.
-   * @param dType The declared type.
-   * @param name The name.
-   * @param choice The choice.
-   */
-  public FullProduction(List<Attribute> attributes, String dType,
-                        NonTerminal name, OrderedChoice choice) {
-    super(attributes, dType, name, null, choice);
-  }
-
-  /**
-   * Create a new full production.  Note that the {@link #qName
-   * qualified name} needs to be initialized separately.
-   *
-   * @param attributes The list of attributes.
-   * @param type The actual type.
-   * @param name The name.
-   * @param qName The fully qualified name.
-   * @param choice The choice.
-   */
-  public FullProduction(List<Attribute> attributes, Type type,
-                        NonTerminal name, NonTerminal qName,
-                        OrderedChoice choice) {
-    super(attributes, type, name, qName, choice);
-  }
-
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (! (o instanceof FullProduction)) return false;
-    FullProduction other = (FullProduction)o;
-    if (! name.equals(other.name)) return false;
-    if (null == qName) {
-      if (qName != other.qName) return false;
-    } else {
-      if (! qName.equals(other.qName)) return false;
+    /**
+     * Create a new full production. Note that the {@link #qName
+     * qualified name} needs to be initialized separately.
+     *
+     * @param attributes The list of attributes.
+     * @param dType The declared type.
+     * @param name The name.
+     * @param choice The choice.
+     */
+    public FullProduction(List<Attribute> attributes, String dType,
+            NonTerminal name, OrderedChoice choice) {
+        super(attributes, dType, name, null, choice);
     }
-    if (null == type) {
-      if (! dType.equals(other.dType)) return false;
-    } else {
-      if (! type.equals(other.type)) return false;
-    }
-    if (! choice.equals(other.choice)) return false;
-    return Attribute.areEquivalent(attributes, other.attributes);
-  }
 
-  public boolean isFull() {
-    return true;
-  }
+    /**
+     * Create a new full production. Note that the {@link #qName
+     * qualified name} needs to be initialized separately.
+     *
+     * @param attributes The list of attributes.
+     * @param type The actual type.
+     * @param name The name.
+     * @param qName The fully qualified name.
+     * @param choice The choice.
+     */
+    public FullProduction(List<Attribute> attributes, Type type,
+            NonTerminal name, NonTerminal qName,
+            OrderedChoice choice) {
+        super(attributes, type, name, qName, choice);
+    }
+
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof FullProduction)) {
+            return false;
+        }
+        FullProduction other = (FullProduction) o;
+        if (!name.equals(other.name)) {
+            return false;
+        }
+        if (null == qName) {
+            if (qName != other.qName) {
+                return false;
+            }
+        } else {
+            if (!qName.equals(other.qName)) {
+                return false;
+            }
+        }
+        if (null == type) {
+            if (!dType.equals(other.dType)) {
+                return false;
+            }
+        } else {
+            if (!type.equals(other.type)) {
+                return false;
+            }
+        }
+        if (!choice.equals(other.choice)) {
+            return false;
+        }
+        return Attribute.areEquivalent(attributes, other.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        return hash;
+    }
+
+    @Override
+    public boolean isFull() {
+        return true;
+    }
 
 }

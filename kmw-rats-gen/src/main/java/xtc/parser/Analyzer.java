@@ -1167,24 +1167,23 @@ public class Analyzer extends Utility {
     }
 
     // Now, change all nonterminals in the grammar.
-    new Renamer(null, this, new Renamer.Translation() {
-        public NonTerminal map(NonTerminal nt, Analyzer analyzer) {
-          NonTerminal result = analyzer.lookup(nt).name;
-
-          if (nt.equals(result)) {
+    new Renamer(null, this, (NonTerminal nt, Analyzer analyzer) -> {
+        NonTerminal result = analyzer.lookup(nt).name;
+        
+        if (nt.equals(result)) {
             // Be sure to return the original nonterminal, which has
             // the right source location.
             result = nt;
-
-          } else {
+            
+        } else {
             // Create a copy of the nonterminal and preserve the
             // original's location.
             result = new NonTerminal(result.name);
             result.setLocation(nt);
-          }
-
-          return result;
-        }}).dispatch(grammar);
+        }
+        
+        return result;
+    }).dispatch(grammar);
 
     // Finally, fix the grammar-wide production map.
     for (NonTerminal name : remove) {

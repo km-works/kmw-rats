@@ -3362,7 +3362,9 @@ public class CodeGenerator extends Visitor {
 
     if (null != v.tail) printer.p(", ").p(var(v.tail));
 
-    for (int i=0; i<v.elements.size(); i++) printer.p(')');
+      for (Binding element : v.elements) {
+          printer.p(')');
+      }
     printer.pln(';');
 
     nextElement();
@@ -3373,7 +3375,7 @@ public class CodeGenerator extends Visitor {
     printer.pln();
     printer.indent().p(VALUE).p(" = ");
     // Do we need a cast?
-    if (! AST.isAny(analyzer.current().type)) {
+    if (!AST.isAny(analyzer.current().type)) {
       if (attributeRawTypes) {
         printer.p('(').p(rawT(extern(analyzer.current().type))).p(')');
       }
