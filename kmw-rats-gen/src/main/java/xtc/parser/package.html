@@ -2,7 +2,7 @@
 
 <i>Rats&#033;</i>, a parser generator supporting extensible syntax.
 
-<p />Grammars for <i>Rats!</i> build on the Parsing Expression Grammar
+<p>Grammars for <i>Rats!</i> build on the Parsing Expression Grammar
 (PEG) formalism described in Brian
 Ford's <a href="http://www.brynosaurus.com/pub/lang/peg.pdf">Parsing
 Expression Grammars</a> paper.  However, since <i>Rats!</i> produces
@@ -14,8 +14,9 @@ good starting point for learning how to use <i>Rats!</i>, in addition
 to this introduction, are <i>Rats!</i>' own grammar in
 package <code>xtc.parser</code> and the C and Java grammars in
 package <code>xtc.lang</code>.
+</p>
 
-<p />The rest of this document covers the following topics:<ul>
+<p>The rest of this document covers the following topics:</p><ul>
 <li><a href="#syntax">Syntax</a></li>
 <li><a href="#overview">Overview of Expressions and Operators</a></li>
 <li><a href="#modules">Grammar Modules</a></li>
@@ -34,13 +35,10 @@ package <code>xtc.lang</code>.
 <li><a href="#parser-actions">Parser Actions</a></li>
 </ul>
 
+<h4 id="syntax">Syntax</h4>
 
-<!-- -------------------------------------------------------------------- -->
-
-<a name="syntax"></a><h4>Syntax</h4>
-
-Here is the syntax of <i>Rats!</i>' grammar modules, expressed in PEG
-syntax:
+<p>Here is the syntax of <i>Rats!</i>' grammar modules, expressed in PEG
+    syntax:</p>
 <pre>
 Module        &lt;- Spacing Intro Production* EOF
 
@@ -69,7 +67,7 @@ Override      &lt;- QName Identifier COLONEQUAL Choice SEMICOLON
                  / QName Identifier COLONEQUAL ELLIPSIS SLASH Choice SEMICOLON
                  / QName Identifier COLONEQUAL Choice SLASH ELLIPSIS SEMICOLON
                  / PAttributes QName Identifier COLONEQUAL ELLIPSIS SEMICOLON
-PAttributes   &lt;- &(QName Identifier EQUAL) / Attribute PAttributes
+PAttributes   &lt;- &amp;(QName Identifier EQUAL) / Attribute PAttributes
 Choice        &lt;- Sequence (SLASH Sequence)*
 Sequence      &lt;- !(SName ELLIPSIS / ELLIPSIS) SName? Voided*
 Voided        &lt;- ("void" Spacing COLON)? Prefix
@@ -98,8 +96,8 @@ Literal       &lt;- ('_' / CharLit / StringLit / Class) Spacing
 CharLit       &lt;- ['] (Escape / !['\\] .)  [']
 StringLit     &lt;- ["] (Escape / !["\\] .)* ["]
 Class         &lt;- '[' (Char '-' Char / Char)* ']'
-Char          &lt;- Escape / ![-\]\\] .
-Escape        &lt;- '\\' [btnfr"'\[\\\]-] / '\\' 'u' HexQuad / OctalEscape
+Char          &lt;- Escape / ![\\\-\]] .
+Escape        &lt;- '\\' [btnfr"'\-\[\\\]] / '\\' 'u' HexQuad / OctalEscape
 OctalEscape   &lt;- '\\' ([0-3] OctDigit OctDigit / OctDigit OctDigit / OctDigit)
 
 Integer       &lt;- (HexNumber / OctNumber / Number) Spacing
@@ -119,7 +117,7 @@ COLONEQUAL    &lt;- ":=" Spacing
 COMMA         &lt;- ',' Spacing
 EQUAL         &lt;- '=' Spacing
 SLASH         &lt;- '/' ![/*] Spacing
-AND           &lt;- '&' Spacing
+AND           &lt;- '&amp;' Spacing
 NOT           &lt;- '!' Spacing
 CARET         &lt;- '^' Spacing
 COLON         &lt;- ':' Spacing
@@ -129,7 +127,7 @@ PLUS          &lt;- '+' Spacing
 OPEN          &lt;- '(' Spacing
 CLOSE         &lt;- ')' Spacing
 SEMICOLON     &lt;- ';' Spacing
-LESS          &lt;- '<'
+LESS          &lt;- '&lt;'
 GREATER       &lt;- '>' Spacing
 
 Spacing       &lt;- (Space / SLComment / MLComment)*
@@ -141,18 +139,16 @@ EOL           &lt;- '\r' '\n' / '\r' / '\n'
 EOF           &lt;- !.
 </pre>
 
-Note that <code>QName</code> stands for "qualified
+<p>Note that <code>QName</code> stands for "qualified
 name," <code>SName</code> stands for "sequence
 name," <code>PAttributes</code> for "production
 attributes," <code>AttValue</code> for "attribute
 value," <code>NZDigit</code> for "non-zero
 digit," <code>FSpacing</code> for "forced
 spacing," <code>SLComment</code> for "single-line comment,"
-and <code>MLComment</code> for "multi-line comment."
+and <code>MLComment</code> for "multi-line comment."</p>
 
-<!-- -------------------------------------------------------------------- -->
-
-<a name="overview"></a><h4>Overview of Expressions and Operators</h4>
+<h4 id="overview">Overview of Expressions and Operators</h4>
 
 The biggest difference between parsing expression grammars and the
 more familiar context-free grammars (CFGs) is the use
@@ -236,9 +232,7 @@ href="http://java.sun.com/developer/technicalArticles/Intl/Supplementary/">Java'
 encoding</a> as a pair of <code>char</code> values in the surrogates
 range.
 
-<!-- -------------------------------------------------------------------- -->
-
-<a name="modules"></a><h4>Grammar Modules</h4>
+<h4 id="modules">Grammar Modules</h4>
 
 A <i>Rats!</i> grammar consists of one top-level module, which is the
 module specified on the command line when invoking <i>Rats!</i>, and
@@ -355,8 +349,6 @@ stylesheet is in the same directory as the generated HTML file(s).
 The output directory can be controlled with the <code>-out</code>
 command line option.
 
-<!-- -------------------------------------------------------------------- -->
-
 <a name="values"></a><h4>Productions and Semantic Values</h4>
 
 After the module declarations follow the productions, with each
@@ -464,11 +456,9 @@ An equivalent, but more verbose definition might look like this:
 Action Header = "header":Word a:Action { yyValue = a; } ;
 </pre>
 
-<!-- -------------------------------------------------------------------- -->
+<h4 id="options-etc">Options, Repetitions, and Nested Choices</h4>
 
-<a name="options-etc"></a><h4>Options, Repetitions, and Nested Choices</h4>
-
-In general, <i>Rats!</i> lifts options, repetitions, and nested
+<p>In general, <i>Rats!</i> lifts options, repetitions, and nested
 choices into their own, newly generated productions.  It also desugars
 options and repetitions into equivalent productions without the option
 or repetition operators.  Note that nested choices are <i>not</i>
@@ -476,25 +466,27 @@ lifted if they are the last element in a sequence.  Further note that
 repetitions are <i>not</i> desugared if they appear in
 a <a href="#transient">transient</a> production.  Finally, options are
 <i>not</i> desugared if they are not bound or if <i>Rats</i> can
-automatically deduce the value of the bound optional expression.
+automatically deduce the value of the bound optional expression.</p>
 
-<p />This lifting and desugaring raises several questions:
+<p>This lifting and desugaring raises several questions:</p>
 <ul>
 
 <li>What is the semantic value of an expression before applying the
 option or repetition operator? Similarly, what is the semantic value
-of a nested choice?<p /></li>
+of a nested choice?</li>
 
 <li>For options and repetitions, what is the semantic value after
-applying the option or repetition operator?<p /></li>
+applying the option or repetition operator?</li>
 
 <li>Finally, for each of these expressions, what is the type of the
-newly generated production?<p /></li>
+newly generated production?</li>
 
 </ul>
+<p>
 We now answer these questions in turn.
+</p>
 
-<p />To determine the semantic value of an expression before applying
+<p>To determine the semantic value of an expression before applying
 the option or repetition operator and that of a nested
 choice, <i>Rats!</i> generally requires that each expression has
 its own, embedded action that defines the corresponding value.  As a
@@ -502,7 +494,7 @@ result, the definition of a production may contain several actions
 that all assign values to <code>yyValue</code>, even in nested
 expressions.
 
-<p />However, for some expressions, <i>Rats!</i> is able to
+<p>However, for some expressions, <i>Rats!</i> is able to
 automatically deduce their semantic values.  Notably, if a nonterminal
 is optional or repeated, the semantic value of the expression before
 applying the option or repetition operator simply is the semantic
@@ -510,8 +502,9 @@ value of the nonterminal's production.  Similarly, if a nonterminal is
 the only expression appearing in an option, the semantic value for
 that option simply is the semantic value of the nonterminal's
 production.  In these cases, no embedded actions are necessary.
+</p>
 
-<p />For options, the semantic value after applying the option
+<p>For options, the semantic value after applying the option
 operator is the semantic value of the expression, if that expression
 can be matched in the input.  Otherwise, the overall semantic value is
 simply <code>null</code>.  For repetitions, the semantic value after
@@ -526,8 +519,9 @@ can easily be converted into a Java Collections Framework list by
 calling {@link xtc.util.Pair#list()} (as illustrated in the production
 for <i>Rats!</i> productions
 shown <a href="#production-example">above</a>).
+</p>
 
-<p />The type of a newly generated production representing a desugared
+<p>The type of a newly generated production representing a desugared
 option generally is <code>Object</code>.  However,
 if <i>Rats!</i> can automatically determine the semantic value of
 an optional expression, it uses the more specific type (which, in the
@@ -536,11 +530,12 @@ corresponding production).  The type of a newly generated production
 representing a desugared repetition always
 is <code>xtc.util.Pair</code>.  Finally, the type of a newly generated
 production representing a lifted choice always is <code>Object</code>.
+</p>
 
-<p />To illustrate the general case of repetitions and nested choices,
+<p>To illustrate the general case of repetitions and nested choices,
 consider the following snippet from <i>Rats!</i>' own grammar,
 which is taken from the <code>Terminal</code> production and parses
-character class specifications:
+character class specifications:</p>
 <pre>
    / '['
       l:( c1:ClassChar '-' c2:ClassChar
@@ -556,6 +551,7 @@ character class specifications:
      ']' Spacing
       { yyValue = new CharClass(l.list()); }
 </pre>
+<p>
 The nested choice has its own actions, which create character ranges
 as their semantic values.  The parser collects these character ranges
 into a sequence of pairs, which is then bound to the <code>l</code>
@@ -563,16 +559,18 @@ variable.  The outer action uses this sequence of pairs to create a
 new character class as the overall semantic value (converting the
 sequence of pairs into a Java Collections Framework list along the
 way).
+</p>
 
-<p /><a name="sequence-example"></a>To illustrate the automatic
+<p id="sequence-example">To illustrate the automatic
 deduction of a semantic value, consider the production for sequences
-from <i>Rats!</i>' own grammar:
+from <i>Rats!</i>' own grammar:</p>
 <pre>
 Sequence Sequence =
    !Ellipsis n:SequenceName? l:Voided*
       { yyValue = new Sequence(n, l.list()); }
    ;
 </pre>
+<p>
 A sequence essentially consists of zero or more repetitions of the
 <code>Voided</code> nonterminal; no embedded action is necessary for
 the repetition.  <i>Rats!</i> automatically collects the individual
@@ -588,20 +586,20 @@ expression does not need an embedded action either.  The syntactic
 predicate <code>!Ellipsis</code> excludes sequence names followed by
 an ellipsis <code>...</code> or an ellipsis by itself from sequences,
 as they are used to <a href="#modifications">modify productions</a>.
+</p>
 
-<!-- -------------------------------------------------------------------- -->
+<h4 id="void">Void and Text-Only Productions</h4>
 
-<a name="void"></a><h4>Void and Text-Only Productions</h4>
-
-Adding actions to create a production's semantic value can seem
+<p>Adding actions to create a production's semantic value can seem
 tedious and may make grammars unnecessarily verbose.  To reduce the
 need for explicit actions, <i>Rats!</i> supports special types of
 productions, which need <i>no</i> semantic actions at all.  We now
 discuss void and text-only productions, which are especially useful
 for recognizing lexical syntax (such as identifiers, punctuation,
 numbers, and so on).
+</p>
 
-<p />A <i>void production</i> is a production that declares the type
+<p>A <i>void production</i> is a production that declares the type
 of its semantic value to be <code>void</code>.  Such a production does
 not require any actions, but it may not be bound to an identifier
 either.  A void production is typically used for ignored spacing or
@@ -610,30 +608,35 @@ punctuation elements.  Void productions also improve the accuracy of
 value.  If the compound expression only contains a single non-void
 nonterminal, that nonterminal's semantic value is used as the semantic
 value of the entire expression.
+</p>
 
-<p />Here is an example void production from <i>Rats!</i>' own
-grammar:
+<p>Here is an example void production from <i>Rats!</i>' own
+    grammar:</p>
 <pre>
 transient void Spacing =
   (Space / LineTerminator / TraditionalComment/ EndOfLineComment)*
   ;
 </pre>
+<p>
 This production matches space characters, line terminators, and
 comments.  Note that the <code>transient</code> keyword is explained
 <a href="#transient">here</a>.
+</p>
 
-<p />The fact the <code>Spacing</code> is declared
+<p>The fact the <code>Spacing</code> is declared
 as <code>void</code> is then used in the production
-for <code>Symbol</code>:
+for <code>Symbol</code>:</p>
 <pre>
 String Symbol = SymbolCharacters Spacing ;
 </pre>
+<p>
 No action is necessary because only the <code>SymbolCharacters</code>
 nonterminal produces a semantic value.  <i>Rats!</i> automatically
 detects this case and passes the value
 of <code>SymbolCharacters</code> through.
+</p>
 
-<p />In general, <i>Rats!</i> tries to deduce a compound expression's
+<p>In general, <i>Rats!</i> tries to deduce a compound expression's
 value, even if it is nested within another expression, ignoring
 nonterminals referencing a void production or explicitly voided
 expressions.  Furthermore, for repetitions, options, and nested
@@ -645,8 +648,9 @@ example, if <code>nt</code> references a void production, then the
 expression "<code>nt*</code>" is equivalent to
 "<code>void:(nt*)</code>" (note that the parentheses are not strictly
 necessary).
+</p>
 
-<p />A <i>text-only production</i> is a production that declares the
+<p>A <i>text-only production</i> is a production that declares the
 type of its semantic value to be a <code>String</code>, does not
 contain any bindings to <code>yyValue</code> nor actions that
 reference <code>yyValue</code> and references only other text-only
@@ -656,10 +660,11 @@ Note that the above <code>Symbol</code> production is not text-only
 because it references a void production.  Also note that bindings
 (besides to <code>yyValue</code>) and semantic predicates may appear
 in text-only productions.
+</p>
 
-<p /><a name="transient-example"></a>To illustrate text-only
+<p id="transient-example">To illustrate text-only
 productions, consider the following productions from <i>Rats!</i>' own
-grammar:
+grammar:</p>
 <pre>
 String StringLiteral            = ["] ( EscapeSequence / !["\\] _ )* ["] ;
 
@@ -668,12 +673,14 @@ transient String EscapeSequence =
 transient String HexNumber      = HexDigit HexDigit HexDigit HexDigit ;
 transient String HexDigit       = [0-9a-fA-F] ;
 </pre>
+<p>
 The <code>StringLiteral</code> production only references terminals
 and other productions that are also text-only.  As a result, its
 semantic value is the text matched in the input, exactly what we
 expect from a production that matches string literals.  Note that the
 <code>transient</code> keyword is explained <a
 href="#transient">here</a>.
+</p>
 
 <p />A note on bindings <i>within</i> text-only productions: When
 binding to a character terminal (the any character constant, a
@@ -685,9 +692,7 @@ representing the text matched by that expression in the input.  For
 options that cannot be matched in the input, the value is the empty
 string (and not <code>null</code>).
 
-<!-- -------------------------------------------------------------------- -->
-
-<a name="generic"></a><h4>Generic Productions</h4>
+<h4 id="generic">Generic Productions</h4>
 
 Void and text-only productions typically help with recognizing lexical
 syntax; though, they are of limited use for productions that recognize

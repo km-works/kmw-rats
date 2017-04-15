@@ -37,7 +37,7 @@ import xtc.util.Runtime;
  *
  * <p>This visitor distinguishes between bindable elements, i.e.,
  * elements that would contribute to the value of a generic
- * production, and valuable element, i.e., elements that can be
+ * production, and valuable elements, i.e., elements that can be
  * rewritten to have a semantic value.  The latter include voided
  * elements and references to void productions that consume the input.
  *
