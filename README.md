@@ -17,13 +17,9 @@ Both the original software and our modifications are licensed under a GPL2 Licen
 The purpose of this project is to enhance the runtime architecture of the Rats-generated Java packrat parser. 
 The problem with the original version is, that all generated parser code is thrown into a single Java class file. 
 For large grammars this can lead to an unmanagable size of the generated parser source.  
-[Oracle Labs](https://labs.oracle.com/projects/) [Project Fortress](http://projectfortress.java.net/) for instance, 
+[Oracle Labs](https://labs.oracle.com/projects/) - [Project Fortress](https://blogs.oracle.com/projectfortress/entry/fortress_wrapping_up) for instance, 
 one of the more prominent users of Rats!, generates a single 2MB parser source file out of some 30 grammar modules. 
 
 On the other hand Rats! already supports modular grammar definitions, in fact one of its distinguishing features. 
-So why, we have asked ourselfs, not leverage this capability for a better runtime architecure, 
-and divide the generated code into managable parser modules? It's not that complicated after all.
-
-The deeper intention behind these obvious niceties, however, is our desire for parsing island grammars with a set of 
-compatible, runtime composable parsers. Thus not only parser modularity is the goal, but also a kind of 
-**global parsing state**, that can be passed around a stack of modular parsers ...
+So why, we have asked ourselfs, not leverage this capability for a modular runtime architecure, 
+and divide the generated code into managable parser code modules? It's not that complicated after all...
