@@ -24,4 +24,12 @@
 
     <properties>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>bintray-km-works-kmw-aux</id>
+            <name>km-works-kmw-aux</name>
+            <url>https://api.bintray.com/maven/km-works/kmw-aux/kmw-rats/;publish=1</url>
+        </repository>
+    </distributionManagement>
 </project>
