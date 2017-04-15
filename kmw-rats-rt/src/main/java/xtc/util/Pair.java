@@ -206,14 +206,13 @@ public class Pair<T> implements Iterable<T> {
    */
 
   /**
-   * Get the element at the specified index of the list starting at
+   * DEAD CODE: Get the element at the specified index of the list starting at
    * this pair.  Note that this method's performance is linear to the
    * index.
    *
    * @param index The element's index.
    * @return The element.
    * @throws IndexOutOfBoundsException Signals an invalid index.
-   */
   public T get(int index) {
     if (0 > index) {
       throw new IndexOutOfBoundsException("Index: "+index+", Size: " +size());
@@ -230,6 +229,7 @@ public class Pair<T> implements Iterable<T> {
 
     throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
   }
+   */
 
   /**
    * DEAD CODE: Replace the element at the specified index of the list starting
