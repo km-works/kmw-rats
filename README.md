@@ -2,7 +2,7 @@
 
 ## About
 
-This is a slightly modified and moderized version of [Rats!](http://cs.nyu.edu/rgrimm/xtc/rats-intro.html) - 
+This is a slightly modified and modernized fork of [Rats!](http://cs.nyu.edu/rgrimm/xtc/rats-intro.html) - 
 a Java Packrat Parser generator - published by [Robert Grim](http://cs.nyu.edu/rgrimm/) as part of his 
 [xtc](http://cs.nyu.edu/rgrimm/xtc/) (eXTensible Compiler) project.
 
